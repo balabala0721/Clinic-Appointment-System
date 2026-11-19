@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using ClinicSystem.Config;
 using Microsoft.Extensions.Options;
 
 namespace ClinicSystem.Services.Ai;
@@ -8,6 +9,7 @@ namespace ClinicSystem.Services.Ai;
 public class GeminiOptions
 {
     public string ApiKey { get; set; } = "";
+    // Model is now a constant (AiSettings.PrimaryModel); kept here so appsettings.json binds cleanly.
     public string Model { get; set; } = "";
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta";
 }
@@ -19,11 +21,21 @@ public class AiUnavailableException : Exception
 }
 
 /// <summary>
-/// Thin wrapper over the Gemini REST "generateContent" endpoint. Both AI features
-/// use this one class, so the HTTP/auth/error handling is written once.
+/// Thin wrapper over the Gemini REST "generateContent" endpoint.
 ///
-/// We use plain HttpClient + JSON instead of an SDK so you can see exactly what is
-/// sent - and it means no extra NuGet package.
+/// Retry / fallback policy (see AiSettings for the knobs):
+///   - Try PrimaryModel first. On 503 or timeout, wait RetryDelayMilliseconds and retry up to
+///     MaxRetriesPerModel times.
+///   - On 429 (quota), skip remaining Primary retries and go straight to FallbackModel.
+///   - If Primary still fails after all retries, try FallbackModel with the same rule.
+///   - 400 / 401 / 403 / 404 are config / programmer errors — throw immediately (no retry).
+///   - If everything fails, throw AiUnavailableException.
+///
+/// Thought-signature safety:
+///   When switching to FallbackModel after Primary failed, StripAllThoughts() is called on a
+///   copy of the request body so Primary's thought tokens never reach FallbackModel.
+///   SupportChatService must also call StripThoughtsFromContents() on its in-memory history
+///   after detecting a switch (see that class for details).
 /// </summary>
 public class GeminiClient
 {
@@ -38,16 +50,77 @@ public class GeminiClient
         _logger = logger;
     }
 
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(_options.ApiKey) && !string.IsNullOrWhiteSpace(_options.Model);
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(_options.ApiKey);
 
-    /// <summary>Sends a request body and returns the parsed JSON response.</summary>
+    /// <summary>
+    /// Sends a request body and returns the parsed JSON response.
+    /// Tries PrimaryModel first, falls back to FallbackModel on transient errors.
+    /// </summary>
     public async Task<JsonObject> GenerateAsync(JsonObject body, CancellationToken ct = default)
-    {
-        if (!IsConfigured) throw new AiUnavailableException("Gemini API key or model is not configured.");
+        => (await GenerateWithModelAsync(body, null, ct)).Response;
 
-        var url = $"{_options.BaseUrl.TrimEnd('/')}/models/{_options.Model}:generateContent";
+    /// <summary>
+    /// Like GenerateAsync but also returns which model answered.
+    /// Pass preferModel to start directly from a specific model — useful for locking the
+    /// whole SupportChatService tool-calling loop to the same model once a fallback occurred.
+    /// When preferModel == FallbackModel, Primary is skipped entirely.
+    /// </summary>
+    public async Task<(JsonObject Response, string ModelUsed)> GenerateWithModelAsync(
+        JsonObject body, string? preferModel, CancellationToken ct = default)
+    {
+        if (!IsConfigured) throw new AiUnavailableException("Gemini API key is not configured.");
+
+        var startModel = preferModel ?? AiSettings.PrimaryModel;
+        // If already locked to FallbackModel, skip Primary to avoid cross-model thought errors.
+        var sequence = startModel == AiSettings.FallbackModel
+            ? new[] { AiSettings.FallbackModel }
+            : new[] { startModel, AiSettings.FallbackModel };
+
+        Exception? lastEx = null;
+
+        for (var mi = 0; mi < sequence.Length; mi++)
+        {
+            var model = sequence[mi];
+
+            // When stepping from Primary to Fallback, strip Primary's thought signatures from
+            // a copy of the body. This copy is used only for this model's attempts.
+            // (If we started directly on FallbackModel, mi is always 0, so we never strip.)
+            var bodyToSend = mi > 0 ? StripAllThoughts(body) : body;
+
+            var quota = false;
+            for (var attempt = 0; attempt <= AiSettings.MaxRetriesPerModel && !quota; attempt++)
+            {
+                if (attempt > 0)
+                    await Task.Delay(AiSettings.RetryDelayMilliseconds, ct);
+                try
+                {
+                    var result = await SendOnceAsync(model, bodyToSend, ct);
+                    _logger.LogInformation("Gemini answered using {Model} (attempt {N})", model, attempt + 1);
+                    return (result, model);
+                }
+                catch (AiQuotaException)
+                {
+                    _logger.LogWarning("Gemini {Model}: 429 quota – going to fallback", model);
+                    lastEx = new AiUnavailableException($"Quota exceeded for model {model}.");
+                    quota = true; // break inner loop, proceed to FallbackModel
+                }
+                catch (AiRetryableException ex)
+                {
+                    _logger.LogWarning("Gemini {Model} attempt {N}/{Max}: {Status}",
+                        model, attempt + 1, AiSettings.MaxRetriesPerModel + 1, ex.StatusCode);
+                    lastEx = ex;
+                }
+                // AiUnavailableException (400/401/403/404) propagates without catching
+            }
+        }
+
+        throw new AiUnavailableException("AI service unavailable after all retries.", lastEx);
+    }
+
+    private async Task<JsonObject> SendOnceAsync(string model, JsonObject body, CancellationToken ct)
+    {
+        var url = $"{_options.BaseUrl.TrimEnd('/')}/models/{model}:generateContent";
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        // Key goes in a header, not the URL, so it doesn't end up in server logs.
         request.Headers.Add("x-goog-api-key", _options.ApiKey);
         request.Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json");
 
@@ -58,28 +131,73 @@ public class GeminiClient
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            _logger.LogWarning(ex, "Gemini request failed or timed out");
-            throw new AiUnavailableException("AI service could not be reached.", ex);
+            _logger.LogWarning(ex, "Gemini {Model}: network error or timeout", model);
+            throw new AiRetryableException($"Network error calling {model}.", 503, ex);
         }
 
         var text = await response.Content.ReadAsStringAsync(ct);
-        if (!response.IsSuccessStatusCode)
-        {
-            // 429 = free-tier rate limit hit; 400 usually = wrong model name or bad request JSON.
-            _logger.LogWarning("Gemini returned {Status}: {Body}", (int)response.StatusCode,
-                text.Length > 500 ? text[..500] : text);
-            throw new AiUnavailableException($"AI service returned {(int)response.StatusCode}.");
-        }
+        var status = (int)response.StatusCode;
 
-        return JsonNode.Parse(text) as JsonObject
-               ?? throw new AiUnavailableException("AI service returned an empty response.");
+        if (response.IsSuccessStatusCode)
+            return JsonNode.Parse(text) as JsonObject
+                   ?? throw new AiUnavailableException("AI service returned an empty response.");
+
+        switch (status)
+        {
+            case 429:
+                throw new AiQuotaException(model);
+            case 503:
+                _logger.LogWarning("Gemini {Model} 503 (overloaded): {Snippet}",
+                    model, text.Length > 300 ? text[..300] : text);
+                throw new AiRetryableException($"Model {model} overloaded.", 503);
+            case 400 or 401 or 403 or 404:
+                _logger.LogError("Gemini {Model} {Status} – config/auth error: {Snippet}",
+                    model, status, text.Length > 500 ? text[..500] : text);
+                throw new AiUnavailableException($"Gemini config error: HTTP {status}.");
+            default:
+                _logger.LogWarning("Gemini {Model} {Status}: {Snippet}",
+                    model, status, text.Length > 300 ? text[..300] : text);
+                throw new AiRetryableException($"Gemini {model} returned {status}.", status);
+        }
     }
 
-    // ------------------------------------------------------------ JSON helpers
+    // ---- thought-signature helpers ----------------------------------------
+
+    /// <summary>
+    /// Returns a deep clone of body with all thought parts stripped from every content entry.
+    /// Used when switching to a different model to prevent cross-model thought-signature errors.
+    /// </summary>
+    private static JsonObject StripAllThoughts(JsonObject body)
+    {
+        var clone = (JsonNode.Parse(body.ToJsonString()) as JsonObject)!;
+        if (clone["contents"] is JsonArray contents)
+            StripThoughtsFromContents(contents);
+        return clone;
+    }
+
+    /// <summary>
+    /// Removes thought parts in-place from a contents array.
+    /// SupportChatService calls this on its own contents reference after detecting a model switch
+    /// so that future rounds in the same ChatAsync call don't send stale thought signatures.
+    /// </summary>
+    public static void StripThoughtsFromContents(JsonArray contents)
+    {
+        foreach (var item in contents.OfType<JsonObject>())
+        {
+            if (item["parts"] is not JsonArray parts) continue;
+            for (var i = parts.Count - 1; i >= 0; i--)
+            {
+                if (parts[i] is JsonObject part && part["thought"]?.GetValue<bool>() == true)
+                    parts.RemoveAt(i);
+            }
+        }
+    }
+
+    // ---- JSON helpers (unchanged) -----------------------------------------
 
     public static JsonObject TextContent(string role, string text) => new()
     {
-        ["role"] = role,                                    // "user" or "model"
+        ["role"] = role,
         ["parts"] = new JsonArray(new JsonObject { ["text"] = text })
     };
 
@@ -127,4 +245,17 @@ public class GeminiClient
         if (call.Id != null) fr["id"] = call.Id;
         return new JsonObject { ["functionResponse"] = fr };
     }
+}
+
+// File-scoped: internal retry-control signals. Never escape GeminiClient.
+file sealed class AiRetryableException : Exception
+{
+    public int StatusCode { get; }
+    public AiRetryableException(string msg, int statusCode, Exception? inner = null)
+        : base(msg, inner) { StatusCode = statusCode; }
+}
+
+file sealed class AiQuotaException : Exception
+{
+    public AiQuotaException(string model) : base($"Quota exceeded for {model}.") { }
 }

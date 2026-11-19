@@ -185,6 +185,7 @@ public class DoctorRecommendationService
             {
                 ["temperature"] = AiSettings.Temperature,
                 ["maxOutputTokens"] = AiSettings.MaxOutputTokens,
+                ["thinkingConfig"] = new JsonObject { ["thinkingLevel"] = AiSettings.ThinkingLevel },
                 ["responseMimeType"] = "application/json",
                 ["responseSchema"] = schema
             }

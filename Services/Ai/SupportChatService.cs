@@ -115,14 +115,29 @@ public class SupportChatService
             ["generationConfig"] = new JsonObject
             {
                 ["temperature"] = AiSettings.Temperature,
-                ["maxOutputTokens"] = AiSettings.MaxOutputTokens
+                ["maxOutputTokens"] = AiSettings.MaxOutputTokens,
+                ["thinkingConfig"] = new JsonObject { ["thinkingLevel"] = AiSettings.ThinkingLevel }
             }
         };
 
         // ---- 2. tool-calling loop
+        // activeModel starts null (let GeminiClient choose Primary). Once a fallback to
+        // FallbackModel occurs, we lock to it for the rest of this ChatAsync call so that
+        // thought signatures from the two models don't get mixed in the conversation history.
+        string? activeModel = null;
+
         for (var round = 0; round < AiSettings.MaxToolRoundTrips; round++)
         {
-            var response = await _gemini.GenerateAsync(body, ct);
+            var (response, modelUsed) = await _gemini.GenerateWithModelAsync(body, activeModel, ct);
+
+            // If Primary fell back to FallbackModel during this round, strip Primary's thought
+            // signatures from the in-memory contents array so future rounds (which will also use
+            // FallbackModel) don't receive cross-model thought tokens.
+            if (activeModel != AiSettings.FallbackModel && modelUsed == AiSettings.FallbackModel)
+                GeminiClient.StripThoughtsFromContents(contents);
+
+            activeModel = modelUsed;
+
             var content = GeminiClient.FirstContent(response);
             var calls = GeminiClient.GetFunctionCalls(content);
 
@@ -132,8 +147,7 @@ public class SupportChatService
                 break;
             }
 
-            // Send the model's own turn back unchanged (DeepClone keeps hidden
-            // "thought signatures" that newer Gemini models require).
+            // DeepClone keeps thought signatures so the same model can verify them next round.
             contents.Add(content!.DeepClone());
 
             var resultParts = new JsonArray();

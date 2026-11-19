@@ -52,8 +52,7 @@ public class SupportChatController : Controller
             return Json(new
             {
                 success = false,
-                reply = $"Sorry, the chat assistant is busy right now. Please try again in a minute, " +
-                        $"or call us at {ClinicInfo.Phone} / WhatsApp {ClinicInfo.WhatsApp}."
+                reply = "The assistant is busy right now. Please try again in a minute, or use the Book Appointment page."
             });
         }
     }

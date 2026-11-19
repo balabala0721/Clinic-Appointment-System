@@ -57,7 +57,15 @@ public static class ClinicInfo
 /// </summary>
 public static class AiSettings
 {
-    public const int RequestTimeoutSeconds = 20;
+    // Model names. PrimaryModel matches appsettings.json "Gemini:Model".
+    public const string PrimaryModel = "gemini-3.5-flash";
+    public const string FallbackModel = "gemini-3.1-flash-lite";
+
+    // Retry / resilience
+    public const int MaxRetriesPerModel = 1;
+    public const int RetryDelayMilliseconds = 1500;
+    public const int RequestTimeoutSeconds = 60;
+
     public const double Temperature = 0.2;           // low = more consistent, less creative
     public const int MaxOutputTokens = 2048;         // newer Gemini models "think" first, which uses tokens too
 
@@ -74,4 +82,7 @@ public static class AiSettings
     public const int MaxSymptomLength = 500;
 
     public const int MaxBillsShownInChat = 5;        // most recent invoices the support chat can list
+
+    public const string ThinkingLevel = "low";
+
 }
