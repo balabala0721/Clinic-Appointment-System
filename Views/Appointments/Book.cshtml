@@ -1,0 +1,60 @@
+@model BookPageViewModel
+@{
+    ViewData["Title"] = "Book an appointment";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card-clean">
+            <h1 class="h4 mb-3">Book an appointment</h1>
+
+            <div class="mb-3">
+                <label class="form-label" for="specialisation">Specialisation</label>
+                <select id="specialisation" class="form-select">
+                    <option value="">All</option>
+                    @foreach (var s in Model.Specialisations)
+                    {
+                        <option value="@s.SpecialisationId">@s.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="doctor">Doctor</label>
+                <select id="doctor" class="form-select">
+                    <option value="">Choose a doctor</option>
+                    @foreach (var d in Model.Doctors)
+                    {
+                        <option value="@d.DoctorId" data-spec="@d.SpecialisationId"
+                                selected="@(d.DoctorId == Model.PreselectedDoctorId)">
+                            @d.FullName (@d.Specialisation?.Name)
+                        </option>
+                    }
+                </select>
+                <a id="doctor-schedule-link" class="small d-none" href="#">View weekly schedule</a>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="date">Date</label>
+                <input id="date" type="date" class="form-control" min="@Model.MinDate" max="@Model.MaxDate" value="@Model.PreselectedDate" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Available times</label>
+                <div id="slots" class="slot-grid"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="reason">Reason for visit <span class="text-muted">(optional)</span></label>
+                <textarea id="reason" class="form-control" rows="2" maxlength="300"></textarea>
+            </div>
+
+            <button id="book-btn" class="btn btn-primary" disabled>Book appointment</button>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/booking.js" asp-append-version="true"></script>
+}

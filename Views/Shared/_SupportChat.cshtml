@@ -1,0 +1,59 @@
+@* Floating AI support chat (like a shop's customer-service chat). Shown to patients on every page.
+   Behaviour is in wwwroot/js/support-chat.js, styles in clinic-modules.css (.sc-*). *@
+@inject ClinicSystem.Services.Ai.GeminiClient Gemini
+@{
+    var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+    // Quick-question chips. Edit freely - clicking one just sends its text as a message.
+    var quickQuestions = new[]
+    {
+        "Book an appointment",
+        "My upcoming appointments",
+        "Which doctor should I see?",
+        "Clinic hours & location",
+        "My bills",
+        "Cancellation policy"
+    };
+}
+
+@if (Gemini.IsConfigured)
+{
+    <div id="support-chat" data-user="@userId">
+        <button id="sc-toggle" class="sc-toggle" type="button" aria-label="Open support chat" aria-expanded="false">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <span id="sc-badge" class="sc-badge d-none">0</span>
+        </button>
+
+        <section id="sc-panel" class="sc-panel d-none" role="dialog" aria-label="Clinic support chat">
+            <header class="sc-header">
+                <div>
+                    <strong>@ClinicInfo.Name</strong>
+                    <div class="sc-sub">AI support &middot; usually replies in seconds</div>
+                </div>
+                <div class="d-flex gap-1">
+                    <button id="sc-clear" class="sc-icon-btn" type="button" title="Start a new chat" aria-label="Start a new chat">&#8635;</button>
+                    <button id="sc-close" class="sc-icon-btn" type="button" title="Minimise" aria-label="Minimise chat">&#10005;</button>
+                </div>
+            </header>
+
+            <div id="sc-log" class="sc-log" aria-live="polite"></div>
+
+            <div id="sc-chips" class="sc-chips">
+                @foreach (var q in quickQuestions)
+                {
+                    <button type="button" class="sc-chip">@q</button>
+                }
+            </div>
+
+            <form id="sc-form" class="sc-form" autocomplete="off">
+                <input id="sc-input" class="form-control" maxlength="@AiSettings.MaxUserMessageLength"
+                       placeholder="Type your question..." aria-label="Message" />
+                <button id="sc-send" class="btn btn-primary" type="submit">Send</button>
+            </form>
+            <div class="sc-foot">AI can make mistakes - check before confirming. Emergency? Call 999.</div>
+        </section>
+    </div>
+}

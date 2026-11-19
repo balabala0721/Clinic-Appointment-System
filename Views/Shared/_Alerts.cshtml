@@ -1,0 +1,10 @@
+@* Shows TempData["Success"] / TempData["Error"] set by controllers after a redirect *@
+@if (TempData["Success"] is string ok)
+{
+    <div class="alert alert-success">@ok</div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="alert alert-danger">@err</div>
+}
+<div id="ajax-alert" class="alert d-none"></div>

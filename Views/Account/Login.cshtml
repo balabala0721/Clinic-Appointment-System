@@ -1,0 +1,47 @@
+@model List<ClinicSystem.Controllers.DevLoginUser>
+@{
+    ViewData["Title"] = "Test login";
+    // Order the groups the way you'd test: patient first, then doctor, then admin side
+    var roleOrder = new[] { Roles.Patient, Roles.Doctor, Roles.Staff, Roles.Admin };
+}
+
+<div class="card-clean mx-auto" style="max-width: 560px">
+    <h1 class="h4 mb-1">Test login</h1>
+    <p class="text-muted small mb-4">Development only - click a user to sign in as them. No password needed.</p>
+
+    @if (ViewBag.DbNotReady == true)
+    {
+        <div class="alert alert-warning mb-0">
+            The database isn't ready. In <strong>Tools &gt; NuGet Package Manager &gt; Package Manager Console</strong> run
+            <code>Add-Migration InitialCreate</code> (first time only), then restart the app.
+            Check the Output window for "Database migration/seeding failed" if it still appears.
+        </div>
+    }
+    else if (Model.Count == 0)
+    {
+        <div class="alert alert-warning mb-0">No users found. Restart the app to create the demo data.</div>
+    }
+
+    @foreach (var role in roleOrder)
+    {
+        var group = Model.Where(u => u.Role == role).ToList();
+        if (group.Count == 0) { continue; }
+
+        <h2 class="h6 text-uppercase text-muted small mt-3 mb-2">@role</h2>
+        @foreach (var u in group)
+        {
+            <form asp-action="Login" method="post" class="mb-2">
+                <input type="hidden" name="userId" value="@u.UserId" />
+                <button class="btn btn-outline-primary w-100 text-start d-flex justify-content-between">
+                    <span>@u.DisplayName</span>
+                    <span class="text-muted small">@u.Email</span>
+                </button>
+            </form>
+        }
+    }
+
+    <hr class="my-4" />
+    <form asp-action="ResetDemoData" method="post" onsubmit="return confirm('Delete all appointments and leave, and restore the demo ones?')">
+        <button class="btn btn-link btn-sm text-danger p-0">Reset demo appointments &amp; leave</button>
+    </form>
+</div>

@@ -1,0 +1,77 @@
+@model List<Appointment>
+@{
+    ViewData["Title"] = "My appointments";
+    var now = ClinicClock.Now;
+    var upcoming = Model.Where(a => a.StartsAt >= now && AppointmentStatus.Changeable.Contains(a.Status))
+                        .OrderBy(a => a.StartsAt).ToList();
+    var history = Model.Except(upcoming).ToList();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">My appointments</h1>
+    <a class="btn btn-primary btn-sm" asp-action="Book">Book new</a>
+</div>
+
+<div class="card-clean mb-4">
+    <h2 class="h6 mb-3">Upcoming</h2>
+    @if (upcoming.Count == 0)
+    {
+        <p class="text-muted mb-0">No upcoming appointments.</p>
+    }
+    @foreach (var a in upcoming)
+    {
+        <div class="border-bottom py-3 appt-row" data-id="@a.AppointmentId" data-doctor="@a.DoctorId">
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+                <div>
+                    <strong>@a.AppointmentDate.ToString("ddd, d MMM yyyy") &middot; @a.StartTime.ToString("HH:mm")</strong><br />
+                    <span class="text-muted">@a.Doctor?.FullName &middot; @a.Doctor?.Specialisation?.Name</span>
+                    <span class="badge bg-light text-dark ms-1">@a.Status</span>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm js-reschedule">Reschedule</button>
+                    <button class="btn btn-outline-danger btn-sm js-cancel">Cancel</button>
+                </div>
+            </div>
+
+            @* Hidden reschedule panel, opened by my-appointments.js *@
+            <div class="reschedule-panel mt-3 d-none">
+                <input type="date" class="form-control form-control-sm mb-2 js-new-date" style="max-width: 200px"
+                       min="@ClinicClock.Today.ToString("yyyy-MM-dd")"
+                       max="@ClinicClock.Today.AddDays(ClinicSettings.MaxBookingDaysAhead).ToString("yyyy-MM-dd")" />
+                <div class="slot-grid mb-2 js-new-slots"></div>
+                <button class="btn btn-primary btn-sm js-confirm-reschedule" disabled>Confirm new time</button>
+            </div>
+        </div>
+    }
+    <p class="text-muted small mt-3 mb-0">
+        Changes must be made at least @ClinicSettings.MinCancelHoursBefore hours before your appointment.
+    </p>
+</div>
+
+<div class="card-clean">
+    <h2 class="h6 mb-3">History</h2>
+    @if (history.Count == 0)
+    {
+        <p class="text-muted mb-0">No past appointments.</p>
+    }
+    else
+    {
+        <table class="table table-sm mb-0">
+            <thead><tr><th>Date</th><th>Doctor</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var a in history)
+                {
+                    <tr>
+                        <td>@a.AppointmentDate.ToString("d MMM yyyy") @a.StartTime.ToString("HH:mm")</td>
+                        <td>@a.Doctor?.FullName</td>
+                        <td>@a.Status</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/js/my-appointments.js" asp-append-version="true"></script>
+}

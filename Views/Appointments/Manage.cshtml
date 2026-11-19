@@ -1,0 +1,125 @@
+@model ManageAppointmentsViewModel
+@{
+    ViewData["Title"] = "Appointments";
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+
+<h1 class="h4 mb-3">Appointments</h1>
+
+<form method="get" class="card-clean row g-2 align-items-end mb-4">
+    <div class="col-md-3">
+        <label class="form-label small">Date</label>
+        <input type="date" name="date" value="@Model.Date?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small">Doctor</label>
+        <select name="doctorId" class="form-select form-select-sm">
+            <option value="">All</option>
+            @foreach (var d in Model.Doctors)
+            {
+                <option value="@d.DoctorId" selected="@(d.DoctorId == Model.DoctorId)">@d.FullName</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small">Patient name</label>
+        <input name="patientName" value="@Model.PatientName" class="form-control form-control-sm" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">Status</label>
+        <select name="status" class="form-select form-select-sm">
+            <option value="">All</option>
+            @foreach (var s in AppointmentStatus.All)
+            {
+                <option value="@s" selected="@(s == Model.Status)">@s</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-1">
+        <button class="btn btn-primary btn-sm w-100">Filter</button>
+    </div>
+</form>
+
+<div class="card-clean">
+    @if (Model.Appointments.Count == 0)
+    {
+        <p class="text-muted mb-0">No appointments match these filters.</p>
+    }
+    else
+    {
+        <table class="table table-sm align-middle mb-0">
+            <thead>
+                <tr><th>Date</th><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model.Appointments)
+                {
+                    var next = AppointmentStatus.AllowedTransitions[a.Status];
+                    var canReschedule = AppointmentStatus.Changeable.Contains(a.Status) && a.StartsAt > ClinicClock.Now;
+                    <tr>
+                        <td>@a.AppointmentDate.ToString("d MMM yyyy")</td>
+                        <td>@a.StartTime.ToString("HH:mm")</td>
+                        <td>@a.Patient?.FullName</td>
+                        <td>@a.Doctor?.FullName</td>
+                        <td>@a.Status</td>
+                        <td class="text-end">
+                            @if (next.Length > 0)
+                            {
+                                <form asp-action="UpdateStatus" method="post" class="d-inline-flex gap-1">
+                                    <input type="hidden" name="id" value="@a.AppointmentId" />
+                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    <select name="status" class="form-select form-select-sm" style="width: auto">
+                                        @foreach (var s in next)
+                                        {
+                                            <option value="@s">@s</option>
+                                        }
+                                    </select>
+                                    <button class="btn btn-outline-primary btn-sm">Update</button>
+                                </form>
+                            }
+                            @if (canReschedule)
+                            {
+                                <button type="button" class="btn btn-link btn-sm js-reschedule"
+                                        data-id="@a.AppointmentId" data-doctor="@a.DoctorId">Reschedule</button>
+                            }
+                        </td>
+                    </tr>
+                    @if (canReschedule)
+                    {
+                        @* Hidden panel opened by manage-appointments.js - same doctor, new date/time *@
+                        <tr class="reschedule-row d-none" data-id="@a.AppointmentId" data-doctor="@a.DoctorId">
+                            <td colspan="6" class="bg-light">
+                                <div class="d-flex flex-wrap align-items-center gap-2 py-1">
+                                    <span class="small text-muted">New time with @a.Doctor?.FullName:</span>
+                                    <input type="date" class="form-control form-control-sm js-new-date" style="width: auto"
+                                           min="@ClinicClock.Today.ToString("yyyy-MM-dd")"
+                                           max="@ClinicClock.Today.AddDays(ClinicSettings.MaxBookingDaysAhead).ToString("yyyy-MM-dd")" />
+                                    <div class="slot-grid js-new-slots"></div>
+                                    <button type="button" class="btn btn-primary btn-sm js-confirm-reschedule" disabled>Confirm</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    }
+
+    <div class="d-flex justify-content-between mt-3">
+        @if (Model.Page > 1)
+        {
+            <a class="btn btn-link btn-sm" asp-route-page="@(Model.Page - 1)" asp-route-date="@Model.Date?.ToString("yyyy-MM-dd")"
+               asp-route-doctorId="@Model.DoctorId" asp-route-patientName="@Model.PatientName" asp-route-status="@Model.Status">Previous</a>
+        }
+        else { <span></span> }
+        @if (Model.Appointments.Count == ClinicSettings.AdminPageSize)
+        {
+            <a class="btn btn-link btn-sm" asp-route-page="@(Model.Page + 1)" asp-route-date="@Model.Date?.ToString("yyyy-MM-dd")"
+               asp-route-doctorId="@Model.DoctorId" asp-route-patientName="@Model.PatientName" asp-route-status="@Model.Status">Next</a>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/manage-appointments.js" asp-append-version="true"></script>
+}

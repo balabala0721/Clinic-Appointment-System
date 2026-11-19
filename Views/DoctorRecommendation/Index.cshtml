@@ -1,0 +1,27 @@
+@{
+    ViewData["Title"] = "Find the right doctor";
+}
+
+<div class="card-clean mx-auto" style="max-width: 680px">
+    <h1 class="h4 mb-1">Find the right doctor</h1>
+    <p class="text-muted mb-3">Describe your symptoms and we'll suggest which kind of doctor to see, and who is available soonest.</p>
+
+    <form id="recommend-form">
+        <textarea id="symptoms" class="form-control mb-2" rows="3" maxlength="@AiSettings.MaxSymptomLength"
+                  placeholder="e.g. Sore throat and fever for 3 days, my child is 5 years old"></textarea>
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted small">Don't include your name or IC number.</span>
+            <button id="recommend-btn" class="btn btn-primary" type="submit">Get suggestion</button>
+        </div>
+    </form>
+
+    <div id="recommend-result" class="mt-4"></div>
+
+    <p class="text-muted small mt-4 mb-0">
+        This is not a diagnosis. In an emergency, call <strong>999</strong>.
+    </p>
+</div>
+
+@section Scripts {
+    <script src="~/js/recommendation.js" asp-append-version="true"></script>
+}

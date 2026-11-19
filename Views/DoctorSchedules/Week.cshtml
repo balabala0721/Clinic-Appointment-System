@@ -1,0 +1,114 @@
+@model DoctorWeekViewModel
+@{
+    ViewData["Title"] = Model.IsOwnSchedule ? "My schedule" : Model.Doctor.FullName;
+    var action = Model.IsOwnSchedule ? "Mine" : "Doctor";
+    var routeId = Model.IsOwnSchedule ? (int?)null : Model.Doctor.DoctorId;
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+        <h1 class="h4 mb-0">@(Model.IsOwnSchedule ? "My schedule" : Model.Doctor.FullName)</h1>
+        <span class="text-muted">@Model.Doctor.Specialisation?.Name</span>
+    </div>
+    <div class="btn-group btn-group-sm">
+        <a class="btn btn-outline-secondary" asp-action="@action" asp-route-id="@routeId" asp-route-week="@Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd")">&larr; Prev</a>
+        <span class="btn btn-outline-secondary disabled">@Model.WeekStart.ToString("d MMM") - @Model.WeekStart.AddDays(6).ToString("d MMM")</span>
+        <a class="btn btn-outline-secondary" asp-action="@action" asp-route-id="@routeId" asp-route-week="@Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd")">Next &rarr;</a>
+    </div>
+</div>
+
+<div class="week-grid mb-4">
+    @for (var i = 0; i < 7; i++)
+    {
+        var date = Model.WeekStart.AddDays(i);
+        var schedule = ScheduleRules.ScheduleFor(Model.Schedules, date);
+        var wholeDayLeave = Model.Leaves.Any(l => l.IsWholeDay && l.StartDate <= date && l.EndDate >= date);
+        var partialLeave = Model.Leaves.Where(l => !l.IsWholeDay && l.StartDate <= date && l.EndDate >= date).ToList();
+        var off = schedule == null || wholeDayLeave;
+
+        <div class="week-day @(off ? "off" : "")">
+            <strong>@date.ToString("ddd d")</strong>
+            @if (wholeDayLeave)
+            {
+                <div>On leave</div>
+            }
+            else if (schedule == null)
+            {
+                <div>Not working</div>
+            }
+            else
+            {
+                <div>@schedule.StartTime.ToString("HH:mm") - @schedule.EndTime.ToString("HH:mm")</div>
+                @if (schedule.BreakStart.HasValue)
+                {
+                    <div class="text-muted small">Break @schedule.BreakStart.Value.ToString("HH:mm")-@schedule.BreakEnd!.Value.ToString("HH:mm")</div>
+                }
+                @foreach (var l in partialLeave)
+                {
+                    <div class="text-muted small">Away @l.StartTime!.Value.ToString("HH:mm")-@l.EndTime!.Value.ToString("HH:mm")</div>
+                }
+                @foreach (var a in Model.Appointments.Where(a => a.AppointmentDate == date))
+                {
+                    <div class="appt">
+                        @a.StartTime.ToString("HH:mm") @a.Patient?.FullName
+                        @if (!string.IsNullOrEmpty(a.ReasonForVisit))
+                        {
+                            <div class="text-muted small">@a.ReasonForVisit</div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+@if (Model.IsOwnSchedule)
+{
+    <div class="d-flex justify-content-end mb-3">
+        <a asp-controller="Appointments" asp-action="Doctor" class="btn btn-outline-primary btn-sm">Manage my appointments</a>
+    </div>
+
+    <div class="row g-4">
+    <div class="col-lg-6">
+    <div class="card-clean">
+        <h2 class="h6 mb-3">My leave requests</h2>
+        @if (Model.MyLeaveRequests.Count == 0)
+        {
+            <p class="text-muted small mb-0">No current or upcoming leave.</p>
+        }
+        @foreach (var l in Model.MyLeaveRequests)
+        {
+            var badge = l.Status == LeaveStatus.Approved ? "bg-success"
+                      : l.Status == LeaveStatus.Rejected ? "bg-danger" : "bg-warning text-dark";
+            <div class="d-flex justify-content-between align-items-center border-bottom py-2 small">
+                <span>
+                    @l.StartDate.ToString("d MMM") @(l.EndDate != l.StartDate ? "- " + l.EndDate.ToString("d MMM") : "")
+                    @(l.IsWholeDay ? "" : $"({l.StartTime:HH:mm}-{l.EndTime:HH:mm})")
+                    <span class="text-muted">@l.Reason</span>
+                </span>
+                <span class="badge @badge">@l.Status</span>
+            </div>
+        }
+    </div>
+    </div>
+    <div class="col-lg-6">
+    <form asp-action="RequestLeave" method="post" class="card-clean">
+        <h2 class="h6 mb-3">Request leave</h2>
+        <div class="row g-2 mb-2">
+            <div class="col"><label class="form-label small">From</label><input asp-for="LeaveForm.StartDate" type="date" class="form-control form-control-sm" /></div>
+            <div class="col"><label class="form-label small">To</label><input asp-for="LeaveForm.EndDate" type="date" class="form-control form-control-sm" /></div>
+        </div>
+        <div class="row g-2 mb-2">
+            <div class="col"><label class="form-label small">Start time (optional)</label><input asp-for="LeaveForm.StartTime" type="time" class="form-control form-control-sm" /></div>
+            <div class="col"><label class="form-label small">End time (optional)</label><input asp-for="LeaveForm.EndTime" type="time" class="form-control form-control-sm" /></div>
+        </div>
+        <div class="mb-3"><label class="form-label small">Reason</label><input asp-for="LeaveForm.Reason" class="form-control form-control-sm" /></div>
+        <button class="btn btn-primary btn-sm">Submit request</button>
+    </form>
+    </div>
+    </div>
+}
+else if (User.IsInRole(Roles.Patient))
+{
+    <a asp-controller="Appointments" asp-action="Book" asp-route-doctorId="@Model.Doctor.DoctorId" class="btn btn-primary">Book with this doctor</a>
+}

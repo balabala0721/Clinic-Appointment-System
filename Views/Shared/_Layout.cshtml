@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Clinic</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/clinic-modules.css" asp-append-version="true" />
+</head>
+<body>
+    @* Placeholder layout - merge these nav links into the team's shared layout. *@
+    <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom mb-4">
+        <div class="container d-flex justify-content-between">
+            <a class="navbar-brand" asp-controller="Appointments" asp-action="Book">Clinic</a>
+            <ul class="navbar-nav">
+                @if (User.IsInRole(Roles.Patient))
+                {
+                    <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="Book">Book</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="My">My appointments</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="DoctorRecommendation" asp-action="Index">Find a doctor</a></li>
+                }
+                @if (User.IsInRole(Roles.Doctor))
+                {
+                    <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="Doctor">My appointments</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="DoctorSchedules" asp-action="Mine">My schedule</a></li>
+                }
+                @if (User.IsInRole(Roles.Staff) || User.IsInRole(Roles.Admin))
+                {
+                    <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="Manage">Appointments</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="DoctorSchedules" asp-action="Index">Schedules</a></li>
+                }
+            </ul>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                @* TEMPORARY: shows who you're logged in as - handy while testing roles *@
+                <div class="d-flex align-items-center gap-2 small">
+                    <span class="text-muted">@User.Identity.Name (@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)</span>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                        <button class="btn btn-outline-secondary btn-sm">Switch user</button>
+                    </form>
+                </div>
+            }
+        </div>
+    </nav>
+
+    @* One token for every AJAX POST on the page - read by clinic.js *@
+    @Html.AntiForgeryToken()
+
+    <main class="container pb-5">
+        <partial name="_Alerts" />
+        @RenderBody()
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/clinic.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+    @* Floating AI support chat - patients only *@
+    @if (User.IsInRole(Roles.Patient))
+    {
+        <partial name="_SupportChat" />
+        <script src="~/js/support-chat.js" asp-append-version="true"></script>
+    }
+</body>
+</html>

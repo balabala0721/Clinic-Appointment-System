@@ -1,0 +1,51 @@
+@model List<DoctorLeave>
+@{
+    ViewData["Title"] = "Leave requests";
+    var current = Context.Request.Query["status"].ToString();
+    if (string.IsNullOrEmpty(current)) current = LeaveStatus.Pending;
+}
+
+<a asp-action="Index" class="small">&larr; All schedules</a>
+<div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+    <h1 class="h4 mb-0">Leave requests</h1>
+    <div class="btn-group btn-group-sm">
+        @foreach (var s in new[] { LeaveStatus.Pending, LeaveStatus.Approved, LeaveStatus.Rejected })
+        {
+            <a asp-action="Leaves" asp-route-status="@s" class="btn @(s == current ? "btn-primary" : "btn-outline-primary")">@s</a>
+        }
+    </div>
+</div>
+
+<div class="card-clean">
+    @if (Model.Count == 0)
+    {
+        <p class="text-muted mb-0">No @current.ToLower() requests.</p>
+    }
+    else
+    {
+        <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Doctor</th><th>Dates</th><th>Time</th><th>Reason</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var l in Model)
+                {
+                    <tr>
+                        <td>@l.Doctor?.FullName</td>
+                        <td>@l.StartDate.ToString("d MMM yyyy") @(l.EndDate != l.StartDate ? "- " + l.EndDate.ToString("d MMM yyyy") : "")</td>
+                        <td>@(l.IsWholeDay ? "Full day" : $"{l.StartTime:HH:mm}-{l.EndTime:HH:mm}")</td>
+                        <td>@l.Reason</td>
+                        <td class="text-end text-nowrap">
+                            @if (l.Status == LeaveStatus.Pending)
+                            {
+                                <form asp-action="ReviewLeave" method="post" class="d-inline">
+                                    <input type="hidden" name="leaveId" value="@l.LeaveId" />
+                                    <button name="approve" value="true" class="btn btn-success btn-sm">Approve</button>
+                                    <button name="approve" value="false" class="btn btn-outline-danger btn-sm">Reject</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

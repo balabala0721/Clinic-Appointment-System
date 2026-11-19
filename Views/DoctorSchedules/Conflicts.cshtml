@@ -1,0 +1,36 @@
+@model List<ScheduleConflict>
+@{
+    ViewData["Title"] = "Schedule conflicts";
+}
+
+<a asp-action="Index" class="small">&larr; All schedules</a>
+<h1 class="h4 mt-2 mb-1">Schedule conflicts</h1>
+<p class="text-muted mb-4">Booked appointments that no longer fit the doctor's timetable or leave. Contact the patient, then reschedule or cancel.</p>
+
+<div class="card-clean">
+    @if (Model.Count == 0)
+    {
+        <p class="text-muted mb-0">No conflicts. All booked appointments fit the current schedules.</p>
+    }
+    else
+    {
+        <table class="table table-sm align-middle mb-0">
+            <thead><tr><th>Date</th><th>Time</th><th>Doctor</th><th>Patient</th><th>Phone</th><th>Problem</th></tr></thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    var a = c.Appointment;
+                    <tr>
+                        <td>@a.AppointmentDate.ToString("ddd d MMM")</td>
+                        <td>@a.StartTime.ToString("HH:mm")</td>
+                        <td>@a.Doctor?.FullName</td>
+                        <td>@a.Patient?.FullName</td>
+                        <td>@a.Patient?.Phone</td>
+                        <td><span class="text-danger">@c.Reason</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <a asp-controller="Appointments" asp-action="Manage" class="btn btn-outline-primary btn-sm mt-3">Go to appointments</a>
+    }
+</div>
