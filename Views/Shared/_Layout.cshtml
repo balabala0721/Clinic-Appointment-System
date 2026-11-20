@@ -18,16 +18,24 @@
                     <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="Book">Book</a></li>
                     <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="My">My appointments</a></li>
                     <li class="nav-item"><a class="nav-link" asp-controller="DoctorRecommendation" asp-action="Index">Find a doctor</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Index">Reports</a></li>
+
                 }
                 @if (User.IsInRole(Roles.Doctor))
                 {
                     <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="Doctor">My appointments</a></li>
                     <li class="nav-item"><a class="nav-link" asp-controller="DoctorSchedules" asp-action="Mine">My schedule</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Index">Reports</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Drugs" asp-action="Index">Drugs</a></li>
+
                 }
-                @if (User.IsInRole(Roles.Staff) || User.IsInRole(Roles.Admin))
+                @if (User.IsInRole(Roles.Admin))
                 {
                     <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="Manage">Appointments</a></li>
                     <li class="nav-item"><a class="nav-link" asp-controller="DoctorSchedules" asp-action="Index">Schedules</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Index">Reports</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-controller="Drugs" asp-action="Index">Drugs</a></li>
+
                 }
             </ul>
             @if (User.Identity?.IsAuthenticated == true)
