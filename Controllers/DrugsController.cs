@@ -6,7 +6,10 @@ namespace ClinicSystem.Controllers
     {
         public IActionResult Index()
         {
+
             return View();
         }
+
+        
     }
 }

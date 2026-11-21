@@ -1,3 +1,5 @@
+using ClinicSystem.Models.Drugs;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -33,25 +35,13 @@ public class MedicalVisit
 
 // ------------------------------------------------------------------ Drugs
 
-public class Medicine
-{
-    public int MedicineId { get; set; }
-    [MaxLength(150)] public string Name { get; set; } = "";
-    [MaxLength(150)] public string? GenericName { get; set; }
-    [MaxLength(50)] public string? DosageForm { get; set; }      // Tablet, Syrup, Capsule...
-    [MaxLength(50)] public string? Strength { get; set; }        // e.g. 500mg
-    public decimal UnitPrice { get; set; }
-    public int StockQuantity { get; set; }
-    public int ReorderLevel { get; set; } = 20;                  // low-stock alert threshold
-    public DateOnly? ExpiryDate { get; set; }
-    public bool IsActive { get; set; } = true;
-}
+
 
 public class Prescription
 {
     public int PrescriptionId { get; set; }
     public int VisitId { get; set; }
-    public int MedicineId { get; set; }
+    public int DrugId { get; set; }
     [MaxLength(50)] public string Dosage { get; set; } = "";     // e.g. 1 tablet
     [MaxLength(50)] public string Frequency { get; set; } = "";  // e.g. 3 times a day
     public int? DurationDays { get; set; }
@@ -59,9 +49,27 @@ public class Prescription
     [MaxLength(300)] public string? Instructions { get; set; }   // e.g. after meals
 
     public MedicalVisit? Visit { get; set; }
-    public Medicine? Medicine { get; set; }
+    [MaxLength(11)]
+
+    public ICollection<PrescriptionDrug> PrescriptionDrugs { get; set; }
 }
 
+public class PrescriptionDrug
+{
+    public int PrescriptionDrugID { get; set; }
+
+    public int PrescriptionID { get; set; }
+
+    public int DrugID { get; set; }
+
+    public int Quantity { get; set; }
+
+    public string Dosage { get; set; }
+
+    public Prescription Prescription { get; set; }
+
+    public Drug Drug { get; set; }
+}
 // --------------------------------------------------------------- Payments
 
 public static class InvoiceStatus
@@ -79,8 +87,8 @@ public static class PaymentStatus
 
 public static class InvoiceItemType
 {
-    public const string Consultation = "Consultation", Medicine = "Medicine", Other = "Other";
-    public static readonly string[] All = { Consultation, Medicine, Other };
+    public const string Consultation = "Consultation", Drug = "Drug", Other = "Other";
+    public static readonly string[] All = { Consultation, Drug, Other };
 }
 
 public class Invoice
@@ -179,3 +187,16 @@ public class AuditLog
     public string? NewValues { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
+public enum ReportType
+{
+    AppointmentReport,
+    ConsultationReport,
+    MedicalVisitReport,
+    PrescriptionReport,
+    PatientMedicalHistoryReport,
+    AppointmentSummaryReport,
+    DrugInventoryReport,
+    ClinicOverallPerformanceReport,
+}
+

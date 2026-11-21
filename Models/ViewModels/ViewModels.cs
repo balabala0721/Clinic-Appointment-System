@@ -163,3 +163,16 @@ public class RecommendRequest
 {
     [Required, StringLength(AiSettings.MaxSymptomLength, MinimumLength = 3)] public string Symptoms { get; set; } = "";
 }
+
+// ------------------------------------------------------------------- Reports
+public class ReportViewModel
+{
+    public int TotalPatients { get; set; }
+
+    public int TotalDoctors { get; set; }
+
+    public int TotalAppointments { get; set; }
+
+    public int TotalReports { get; set; }
+}
+

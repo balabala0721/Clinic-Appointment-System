@@ -1,5 +1,7 @@
 using ClinicSystem.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using ClinicSystem.Models.ReportDB;
+using ClinicSystem.Models.Drugs;
 
 namespace ClinicSystem.Data;
 
@@ -29,14 +31,16 @@ public class ClinicDbContext : DbContext
 
     // Other modules
     public DbSet<MedicalVisit> MedicalVisits => Set<MedicalVisit>();
-    public DbSet<Medicine> Medicines => Set<Medicine>();
+    public DbSet<Drug> Drugs => Set<Drug>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
+    public DbSet<PrescriptionDrug> PrescriptionDrugs => Set<PrescriptionDrug>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<PaymentCancellationRequest> PaymentCancellationRequests => Set<PaymentCancellationRequest>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<GeneratedReportHistory> GeneratedReportHistories { get; set; }
 
     // Shared settings
     private const string UtcNowSql = "SYSUTCDATETIME()";   // default for CreatedAt-style columns
@@ -152,15 +156,20 @@ public class ClinicDbContext : DbContext
         });
 
         // ------------------------------------------------------------ drugs
-        modelBuilder.Entity<Medicine>(e =>
-            e.ToTable("Medicines", t => t.HasCheckConstraint("CK_Medicines_Stock", "[StockQuantity] >= 0")));
+        modelBuilder.Entity<Drug>(e =>
+            e.ToTable("Drugs", t => t.HasCheckConstraint("CK_Drugs_Stock", "[StockQuantity] >= 0")));
 
-        modelBuilder.Entity<Prescription>(e =>
+        modelBuilder.Entity<PrescriptionDrug>(e =>
         {
-            e.ToTable("Prescriptions", t => t.HasCheckConstraint("CK_Prescriptions_Qty", "[Quantity] > 0"));
-            e.HasOne(p => p.Visit).WithMany(v => v.Prescriptions).HasForeignKey(p => p.VisitId);
-            e.HasOne(p => p.Medicine).WithMany().HasForeignKey(p => p.MedicineId);
+            e.HasOne(pd => pd.Prescription);
+            e.WithMany(p => p.PrescriptionDrugs);
+            e.HasForeignKey(pd => pd.PrescriptionID);
         });
+
+        modelBuilder.Entity<PrescriptionDrug>()
+            .HasOne(pd => pd.Drug)
+            .WithMany(d => d.PrescriptionDrugs)
+            .HasForeignKey(pd => pd.DrugID);
 
         // --------------------------------------------------------- payments
         modelBuilder.Entity<Invoice>(e =>
@@ -219,6 +228,8 @@ public class ClinicDbContext : DbContext
             e.HasOne<User>().WithMany().HasForeignKey(a => a.UserId);
             e.Property(a => a.CreatedAt).HasDefaultValueSql(UtcNowSql);
         });
+
+
 
         // No cascade deletes anywhere. Medical and payment records must never vanish because
         // a parent row was deleted (we soft-delete instead). This also avoids SQL Server's
