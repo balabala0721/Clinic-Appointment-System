@@ -1,9 +1,8 @@
-﻿using ClinicSystem.Models.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ClinicSystem.Models.Drugs;
+namespace ClinicSystem.Models.Entities;
 
 public enum StockStatus
 {
@@ -51,7 +50,7 @@ public class Drug
     public string MedicalUses { get; set; }
 
     [Required]
-    [Precision(10, 2)]
+    [Precision(3, 2)]
     [Range(0.01, 999.99)]
     public decimal UnitPrice { get; set; }
 
@@ -67,5 +66,5 @@ public class Drug
     public int MinStockLevel { get; set; }
 
     // Navigation Property
-    public ICollection<PrescriptionDrug> PrescriptionDrugs { get; set; }
+    public List<Prescription> Prescriptions { get; set; } = new();
 }

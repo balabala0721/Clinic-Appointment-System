@@ -1,5 +1,4 @@
 ﻿using ClinicSystem.Data;
-using ClinicSystem.Models.ReportDB;
 using ClinicSystem.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

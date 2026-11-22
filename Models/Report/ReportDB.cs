@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ClinicSystem.Models.ReportDB;
+namespace ClinicSystem.Models.Entities;
 
 public enum ReportType
 {

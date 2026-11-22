@@ -1,4 +1,4 @@
-using ClinicSystem.Models.Drugs;
+using ClinicSystem.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -50,26 +50,11 @@ public class Prescription
 
     public MedicalVisit? Visit { get; set; }
     [MaxLength(11)]
+    public Drug? Drug { get; set; }
 
-    public ICollection<PrescriptionDrug> PrescriptionDrugs { get; set; }
 }
 
-public class PrescriptionDrug
-{
-    public int PrescriptionDrugID { get; set; }
 
-    public int PrescriptionID { get; set; }
-
-    public int DrugID { get; set; }
-
-    public int Quantity { get; set; }
-
-    public string Dosage { get; set; }
-
-    public Prescription Prescription { get; set; }
-
-    public Drug Drug { get; set; }
-}
 // --------------------------------------------------------------- Payments
 
 public static class InvoiceStatus
@@ -188,15 +173,5 @@ public class AuditLog
     public DateTime CreatedAt { get; set; }
 }
 
-public enum ReportType
-{
-    AppointmentReport,
-    ConsultationReport,
-    MedicalVisitReport,
-    PrescriptionReport,
-    PatientMedicalHistoryReport,
-    AppointmentSummaryReport,
-    DrugInventoryReport,
-    ClinicOverallPerformanceReport,
-}
+
 

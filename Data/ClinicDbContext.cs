@@ -1,7 +1,5 @@
 using ClinicSystem.Models.Entities;
 using Microsoft.EntityFrameworkCore;
-using ClinicSystem.Models.ReportDB;
-using ClinicSystem.Models.Drugs;
 
 namespace ClinicSystem.Data;
 
@@ -33,7 +31,6 @@ public class ClinicDbContext : DbContext
     public DbSet<MedicalVisit> MedicalVisits => Set<MedicalVisit>();
     public DbSet<Drug> Drugs => Set<Drug>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
-    public DbSet<PrescriptionDrug> PrescriptionDrugs => Set<PrescriptionDrug>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
     public DbSet<Payment> Payments => Set<Payment>();
@@ -159,17 +156,12 @@ public class ClinicDbContext : DbContext
         modelBuilder.Entity<Drug>(e =>
             e.ToTable("Drugs", t => t.HasCheckConstraint("CK_Drugs_Stock", "[StockQuantity] >= 0")));
 
-        modelBuilder.Entity<PrescriptionDrug>(e =>
+        modelBuilder.Entity<Prescription>(e =>
         {
-            e.HasOne(pd => pd.Prescription);
-            e.WithMany(p => p.PrescriptionDrugs);
-            e.HasForeignKey(pd => pd.PrescriptionID);
+            e.ToTable("Prescriptions", t => t.HasCheckConstraint("CK_Prescriptions_Qty", "[Quantity] > 0"));
+            e.HasOne(p => p.Visit).WithMany(v => v.Prescriptions).HasForeignKey(p => p.VisitId);
+            e.HasOne(p => p.Drug).WithMany().HasForeignKey(p => p.DrugId);
         });
-
-        modelBuilder.Entity<PrescriptionDrug>()
-            .HasOne(pd => pd.Drug)
-            .WithMany(d => d.PrescriptionDrugs)
-            .HasForeignKey(pd => pd.DrugID);
 
         // --------------------------------------------------------- payments
         modelBuilder.Entity<Invoice>(e =>
