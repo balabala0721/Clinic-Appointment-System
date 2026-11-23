@@ -87,7 +87,7 @@ public class DoctorRecommendationService
 
         // ---- 2. ask the AI to choose from specialisations that actually have active doctors
         var specialisations = await _db.Specialisations
-            .Where(s => _db.Doctors.Any(d => d.SpecialisationId == s.SpecialisationId && d.IsActive))
+            .Where(s => _db.Doctors.Any(d => d.SpecialisationId == s.SpecialisationId))
             .Select(s => s.Name)
             .ToListAsync(ct);
         if (specialisations.Count == 0)
@@ -105,7 +105,7 @@ public class DoctorRecommendationService
 
         // ---- 3. rank doctors in that specialisation by earliest available slot
         var doctors = await _db.Doctors
-            .Where(d => d.IsActive && d.Specialisation!.Name == chosen)
+            .Where(d => d.Specialisation!.Name == chosen)
             .AsNoTracking().ToListAsync(ct);
 
         var today = ClinicClock.Today;
@@ -116,7 +116,7 @@ public class DoctorRecommendationService
             ranked.Add(new RecommendedDoctor
             {
                 DoctorId = d.DoctorId,
-                Name = d.FullName,
+                Name = d.User.FullName,
                 ConsultationFee = d.ConsultationFee,
                 Slots = slots.Take(ClinicSettings.SlotsShownPerDoctor).ToList()
             });

@@ -35,7 +35,7 @@ public class Drug
     [Key]
     [MaxLength(11)]
     [DatabaseGenerated(DatabaseGeneratedOption.None)] // Since DrugID is a Varchar(11) custom ID
-    public string DrugID { get; set; }
+    public int DrugID { get; set; }
 
     [Required]
     [MaxLength(100)]

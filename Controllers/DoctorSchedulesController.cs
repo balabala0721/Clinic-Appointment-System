@@ -31,10 +31,9 @@ public class DoctorSchedulesController : Controller
     public async Task<IActionResult> Index(int? specialisationId, string? search)
     {
         var doctors = await _db.Doctors.Include(d => d.Specialisation)
-            .Where(d => d.IsActive
-                     && (specialisationId == null || d.SpecialisationId == specialisationId)
-                     && (search == null || d.FullName.Contains(search)))
-            .OrderBy(d => d.FullName).AsNoTracking().ToListAsync();
+            .Where(d => (specialisationId == null || d.SpecialisationId == specialisationId)
+                     && (search == null || d.User.FullName.Contains(search)))
+            .OrderBy(d => d.User.FullName).AsNoTracking().ToListAsync();
 
         var doctorIds = doctors.Select(d => d.DoctorId).ToList();
         var schedules = await _db.DoctorSchedules
@@ -178,7 +177,7 @@ public class DoctorSchedulesController : Controller
     private async Task<DoctorWeekViewModel?> BuildWeekViewModelAsync(int doctorId, DateOnly? week, bool includeAppointments)
     {
         var doctor = await _db.Doctors.Include(d => d.Specialisation).AsNoTracking()
-                              .FirstOrDefaultAsync(d => d.DoctorId == doctorId && d.IsActive);
+                              .FirstOrDefaultAsync(d => d.DoctorId == doctorId);
         if (doctor == null) return null;
 
         // Week starts on Monday

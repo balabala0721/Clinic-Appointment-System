@@ -3,6 +3,7 @@ using ClinicSystem.Config;
 using ClinicSystem.Data;
 using ClinicSystem.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using ClinicSystem.Models.Account;
 
 namespace ClinicSystem.Services.Ai;
 
@@ -347,7 +348,7 @@ public class SupportChatService
             list.Add(new JsonObject
             {
                 ["doctor_id"] = d.DoctorId,
-                ["name"] = d.FullName,
+                ["name"] = d.User.FullName,
                 ["specialisation"] = d.Specialisation?.Name
             });
         return new JsonObject { ["doctors"] = list };
@@ -361,7 +362,7 @@ public class SupportChatService
 
         var doctorId = ToolArgs.Int(args, "doctor_id");
         var doctors = doctorId.HasValue
-            ? await _db.Doctors.Where(d => d.DoctorId == doctorId && d.IsActive).AsNoTracking().ToListAsync()
+            ? await _db.Doctors.Where(d => d.DoctorId == doctorId).AsNoTracking().ToListAsync()
             : await ActiveDoctorsQuery(ToolArgs.Str(args, "specialisation")).ToListAsync();
         if (doctors.Count == 0) return Error("No matching active doctor found. Call list_doctors to see who is available.");
 
@@ -377,7 +378,7 @@ public class SupportChatService
             list.Add(new JsonObject
             {
                 ["doctor_id"] = doctor.DoctorId,
-                ["doctor_name"] = doctor.FullName,
+                ["doctor_name"] = doctor.User.FullName,
                 ["date"] = slot.Date.ToString(DateFormat),
                 ["day"] = slot.Date.DayOfWeek.ToString(),
                 ["start_time"] = slot.Start.ToString(TimeFormat)
@@ -397,7 +398,7 @@ public class SupportChatService
             {
                 ["appointment_id"] = a.AppointmentId,
                 ["doctor_id"] = a.DoctorId,
-                ["doctor_name"] = a.Doctor?.FullName,
+                ["doctor_name"] = a.Doctor?.User?.FullName,
                 ["date"] = a.AppointmentDate.ToString(DateFormat),
                 ["start_time"] = a.StartTime.ToString(TimeFormat),
                 ["status"] = a.Status
@@ -412,7 +413,7 @@ public class SupportChatService
         var start = ToolArgs.Time(args, "start_time");
         if (doctorId == null || date == null || start == null) return Error("doctor_id, date (yyyy-MM-dd) and start_time (HH:mm) are required.");
 
-        var doctor = await _db.Doctors.AsNoTracking().FirstOrDefaultAsync(d => d.DoctorId == doctorId && d.IsActive);
+        var doctor = await _db.Doctors.AsNoTracking().FirstOrDefaultAsync(d => d.DoctorId == doctorId);
         if (doctor == null) return Error("Doctor not found.");
         if (await _slots.FindSlotAsync(doctor.DoctorId, date.Value, start.Value) == null)
             return Error("That slot is not available. Call find_available_slots for free times.");
@@ -421,10 +422,10 @@ public class SupportChatService
         {
             Type = "book",
             DoctorId = doctor.DoctorId,
-            DoctorName = doctor.FullName,
+            DoctorName = doctor.User.FullName,
             Date = date.Value.ToString(DateFormat),
             StartTime = start.Value.ToString(TimeFormat),
-            Summary = $"Book {doctor.FullName} on {date.Value:ddd d MMM} at {start.Value.ToString(TimeFormat)}"
+            Summary = $"Book {doctor.User.FullName} on {date.Value:ddd d MMM} at {start.Value.ToString(TimeFormat)}"
         });
     }
 
@@ -443,7 +444,7 @@ public class SupportChatService
             Type = "reschedule",
             AppointmentId = appt.AppointmentId,
             DoctorId = appt.DoctorId,
-            DoctorName = appt.Doctor?.FullName ?? "",
+            DoctorName = appt.Doctor?.User?.FullName ?? "",
             Date = date.Value.ToString(DateFormat),
             StartTime = start.Value.ToString(TimeFormat),
             Summary = $"Move {appt.AppointmentDate:ddd d MMM} {appt.StartTime.ToString(TimeFormat)} " +
@@ -461,8 +462,8 @@ public class SupportChatService
             Type = "cancel",
             AppointmentId = appt.AppointmentId,
             DoctorId = appt.DoctorId,
-            DoctorName = appt.Doctor?.FullName ?? "",
-            Summary = $"Cancel {appt.Doctor?.FullName} on {appt.AppointmentDate:ddd d MMM} at {appt.StartTime.ToString(TimeFormat)}"
+            DoctorName = appt.Doctor?.User?.FullName ?? "",
+            Summary = $"Cancel {appt.Doctor?.User?.FullName} on {appt.AppointmentDate:ddd d MMM} at {appt.StartTime.ToString(TimeFormat)}"
         });
     }
 
@@ -560,7 +561,7 @@ public class SupportChatService
 
     private IQueryable<Doctor> ActiveDoctorsQuery(string? specialisation) =>
         _db.Doctors.Include(d => d.Specialisation)
-           .Where(d => d.IsActive && (specialisation == null || d.Specialisation!.Name.Contains(specialisation)))
+           .Where(d => (specialisation == null || d.Specialisation!.Name.Contains(specialisation)))
            .AsNoTracking();
 
     private Task<Appointment?> OwnChangeableAppointmentAsync(int? appointmentId, int patientId) =>

@@ -1,13 +1,13 @@
 @model DoctorWeekViewModel
 @{
-    ViewData["Title"] = Model.IsOwnSchedule ? "My schedule" : Model.Doctor.FullName;
+    ViewData["Title"] = Model.IsOwnSchedule ? "My schedule" : Model.Doctor.User.FullName;
     var action = Model.IsOwnSchedule ? "Mine" : "Doctor";
     var routeId = Model.IsOwnSchedule ? (int?)null : Model.Doctor.DoctorId;
 }
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
-        <h1 class="h4 mb-0">@(Model.IsOwnSchedule ? "My schedule" : Model.Doctor.FullName)</h1>
+        <h1 class="h4 mb-0">@(Model.IsOwnSchedule ? "My schedule" : Model.Doctor.User.FullName)</h1>
         <span class="text-muted">@Model.Doctor.Specialisation?.Name</span>
     </div>
     <div class="btn-group btn-group-sm">
@@ -50,7 +50,7 @@
                 @foreach (var a in Model.Appointments.Where(a => a.AppointmentDate == date))
                 {
                     <div class="appt">
-                        @a.StartTime.ToString("HH:mm") @a.Patient?.FullName
+                        @a.StartTime.ToString("HH:mm") @a.Patient?.User.FullName
                         @if (!string.IsNullOrEmpty(a.ReasonForVisit))
                         {
                             <div class="text-muted small">@a.ReasonForVisit</div>

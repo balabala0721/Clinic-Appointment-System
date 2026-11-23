@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using ClinicSystem.Models.Account;
 
 namespace ClinicSystem.Models.Entities;
 
@@ -63,56 +65,6 @@ public static class LeaveStatus
     public const string Pending = "Pending";
     public const string Approved = "Approved";
     public const string Rejected = "Rejected";
-}
-
-public class User
-{
-    public int UserId { get; set; }
-    [MaxLength(256)] public string Email { get; set; } = "";
-    [MaxLength(256)] public string PasswordHash { get; set; } = "";   // hash only, never plain text
-    [MaxLength(20)] public string Role { get; set; } = Roles.Patient;
-    [MaxLength(20)] public string AccountStatus { get; set; } = "Active";   // Active | Blocked | Deactivated
-    public DateTime CreatedAt { get; set; }
-    public DateTime? LastLoginAt { get; set; }
-}
-
-public class Patient
-{
-    public int PatientId { get; set; }
-    public int? UserId { get; set; }                 // null = walk-in registered by staff, no login
-    [MaxLength(150)] public string FullName { get; set; } = "";
-    [MaxLength(20)] public string? ICNumber { get; set; }      // MyKad / passport - personal data under PDPA
-    [MaxLength(10)] public string? Gender { get; set; }
-    public DateOnly? DateOfBirth { get; set; }
-    [MaxLength(20)] public string? Phone { get; set; }
-    [MaxLength(300)] public string? Address { get; set; }
-    [MaxLength(150)] public string? EmergencyContactName { get; set; }
-    [MaxLength(20)] public string? EmergencyContactPhone { get; set; }
-    [MaxLength(500)] public string? Allergies { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public bool IsDeleted { get; set; }
-}
-
-public class Specialisation
-{
-    public int SpecialisationId { get; set; }
-    [MaxLength(100)] public string Name { get; set; } = "";
-}
-
-public class Doctor
-{
-    public int DoctorId { get; set; }
-    public int UserId { get; set; }
-    public int SpecialisationId { get; set; }
-    [MaxLength(150)] public string FullName { get; set; } = "";
-    [MaxLength(30)] public string? MMCRegistrationNo { get; set; }   // Malaysian Medical Council no.
-    [MaxLength(20)] public string? Phone { get; set; }
-    public decimal ConsultationFee { get; set; }
-    [MaxLength(1000)] public string? Bio { get; set; }
-    [MaxLength(300)] public string? PhotoUrl { get; set; }
-    public bool IsActive { get; set; } = true;       // "deactivate" instead of delete
-
-    public Specialisation? Specialisation { get; set; }
 }
 
 public class DoctorSchedule

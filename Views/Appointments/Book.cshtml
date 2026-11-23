@@ -27,7 +27,7 @@
                     {
                         <option value="@d.DoctorId" data-spec="@d.SpecialisationId"
                                 selected="@(d.DoctorId == Model.PreselectedDoctorId)">
-                            @d.FullName (@d.Specialisation?.Name)
+                            @d.User.FullName (@d.Specialisation?.Name)
                         </option>
                     }
                 </select>

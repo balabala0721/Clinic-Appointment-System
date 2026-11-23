@@ -17,7 +17,7 @@
             <option value="">All</option>
             @foreach (var d in Model.Doctors)
             {
-                <option value="@d.DoctorId" selected="@(d.DoctorId == Model.DoctorId)">@d.FullName</option>
+                <option value="@d.DoctorId" selected="@(d.DoctorId == Model.DoctorId)">@d.User.FullName</option>
             }
         </select>
     </div>
@@ -59,8 +59,8 @@
                     <tr>
                         <td>@a.AppointmentDate.ToString("d MMM yyyy")</td>
                         <td>@a.StartTime.ToString("HH:mm")</td>
-                        <td>@a.Patient?.FullName</td>
-                        <td>@a.Doctor?.FullName</td>
+                        <td>@a.Patient?.User.FullName</td>
+                        <td>@a.Doctor?.User.FullName</td>
                         <td>@a.Status</td>
                         <td class="text-end">
                             @if (next.Length > 0)
@@ -90,7 +90,7 @@
                         <tr class="reschedule-row d-none" data-id="@a.AppointmentId" data-doctor="@a.DoctorId">
                             <td colspan="6" class="bg-light">
                                 <div class="d-flex flex-wrap align-items-center gap-2 py-1">
-                                    <span class="small text-muted">New time with @a.Doctor?.FullName:</span>
+                                    <span class="small text-muted">New time with @a.Doctor?.User.FullName:</span>
                                     <input type="date" class="form-control form-control-sm js-new-date" style="width: auto"
                                            min="@ClinicClock.Today.ToString("yyyy-MM-dd")"
                                            max="@ClinicClock.Today.AddDays(ClinicSettings.MaxBookingDaysAhead).ToString("yyyy-MM-dd")" />

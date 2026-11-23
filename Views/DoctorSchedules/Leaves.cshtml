@@ -29,7 +29,7 @@
                 @foreach (var l in Model)
                 {
                     <tr>
-                        <td>@l.Doctor?.FullName</td>
+                        <td>@l.Doctor?.User.FullName</td>
                         <td>@l.StartDate.ToString("d MMM yyyy") @(l.EndDate != l.StartDate ? "- " + l.EndDate.ToString("d MMM yyyy") : "")</td>
                         <td>@(l.IsWholeDay ? "Full day" : $"{l.StartTime:HH:mm}-{l.EndTime:HH:mm}")</td>
                         <td>@l.Reason</td>

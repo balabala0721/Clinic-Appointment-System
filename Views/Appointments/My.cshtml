@@ -24,7 +24,7 @@
             <div class="d-flex justify-content-between flex-wrap gap-2">
                 <div>
                     <strong>@a.AppointmentDate.ToString("ddd, d MMM yyyy") &middot; @a.StartTime.ToString("HH:mm")</strong><br />
-                    <span class="text-muted">@a.Doctor?.FullName &middot; @a.Doctor?.Specialisation?.Name</span>
+                    <span class="text-muted">@a.Doctor?.User.FullName &middot; @a.Doctor?.Specialisation?.Name</span>
                     <span class="badge bg-light text-dark ms-1">@a.Status</span>
                 </div>
                 <div>
@@ -63,7 +63,7 @@
                 {
                     <tr>
                         <td>@a.AppointmentDate.ToString("d MMM yyyy") @a.StartTime.ToString("HH:mm")</td>
-                        <td>@a.Doctor?.FullName</td>
+                        <td>@a.Doctor?.User.FullName</td>
                         <td>@a.Status</td>
                     </tr>
                 }

@@ -23,9 +23,9 @@
                     <tr>
                         <td>@a.AppointmentDate.ToString("ddd d MMM")</td>
                         <td>@a.StartTime.ToString("HH:mm")</td>
-                        <td>@a.Doctor?.FullName</td>
-                        <td>@a.Patient?.FullName</td>
-                        <td>@a.Patient?.Phone</td>
+                        <td>@a.Doctor?.User.FullName</td>
+                        <td>@a.Patient?.User.FullName</td>
+                        <td>@a.Patient?.User.PhoneNo</td>
                         <td><span class="text-danger">@c.Reason</span></td>
                     </tr>
                 }

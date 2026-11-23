@@ -36,7 +36,7 @@ public class CurrentUserService
     {
         var userId = UserId;
         return await _db.Patients
-            .Where(p => p.UserId == userId && !p.IsDeleted)
+            .Where(p => p.UserId == userId)
             .Select(p => (int?)p.PatientId)
             .FirstOrDefaultAsync();
     }
@@ -45,7 +45,7 @@ public class CurrentUserService
     {
         var userId = UserId;
         return await _db.Doctors
-            .Where(d => d.UserId == userId && d.IsActive)
+            .Where(d => d.UserId == userId)
             .Select(d => (int?)d.DoctorId)
             .FirstOrDefaultAsync();
     }

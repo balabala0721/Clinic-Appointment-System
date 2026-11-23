@@ -1,4 +1,5 @@
 using ClinicSystem.Models.Entities;
+using ClinicSystem.Models.Account;
 using Microsoft.EntityFrameworkCore;
 
 namespace ClinicSystem.Data;
@@ -51,6 +52,7 @@ public class ClinicDbContext : DbContext
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.Properties<decimal>().HavePrecision(MoneyPrecision, MoneyScale);
+        configurationBuilder.Properties<Enum>().HaveConversion<string>();
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -72,8 +74,8 @@ public class ClinicDbContext : DbContext
             e.ToTable("Patients", t => t.HasCheckConstraint("CK_Patients_Gender", "[Gender] IN ('Male','Female')"));
             e.HasOne<User>().WithMany().HasForeignKey(p => p.UserId);
             e.HasIndex(p => p.UserId).IsUnique();          // one patient profile per login
-            e.HasIndex(p => p.ICNumber).IsUnique();        // EF makes nullable unique indexes ignore NULLs
-            e.Property(p => p.CreatedAt).HasDefaultValueSql(UtcNowSql);
+            e.HasIndex(p => p.IdNumber).IsUnique();        // EF makes nullable unique indexes ignore NULLs
+            e.Property(p => p.User.CreatedAt).HasDefaultValueSql(UtcNowSql);
         });
 
         // ---------------------------------------------------------- doctors
@@ -154,13 +156,15 @@ public class ClinicDbContext : DbContext
 
         // ------------------------------------------------------------ drugs
         modelBuilder.Entity<Drug>(e =>
-            e.ToTable("Drugs", t => t.HasCheckConstraint("CK_Drugs_Stock", "[StockQuantity] >= 0")));
+        {
+            e.ToTable("Drugs", t => t.HasCheckConstraint("CK_Drugs_Stock", "[StockQuantity] >= 0"));
+            e.HasMany(d => d.Prescriptions).WithOne(p => p.Drug).HasForeignKey(p => p.DrugId);
+        });
 
         modelBuilder.Entity<Prescription>(e =>
         {
             e.ToTable("Prescriptions", t => t.HasCheckConstraint("CK_Prescriptions_Qty", "[Quantity] > 0"));
             e.HasOne(p => p.Visit).WithMany(v => v.Prescriptions).HasForeignKey(p => p.VisitId);
-            e.HasOne(p => p.Drug).WithMany().HasForeignKey(p => p.DrugId);
         });
 
         // --------------------------------------------------------- payments

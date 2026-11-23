@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ClinicSystem.Data;
 using ClinicSystem.Models.Entities;
+using ClinicSystem.Models.Account;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -41,14 +42,14 @@ public class AccountController : Controller
         }
 
         // Show each user with their display name (doctor/patient name, or email for staff/admin)
-        var users = await _db.Users.Where(u => u.AccountStatus == "Active").OrderBy(u => u.Role).ThenBy(u => u.Email)
+        var users = await _db.Users.Where(u => u.AccountStatus == AccountStatus.Active).OrderBy(u => u.Role).ThenBy(u => u.Email)
                                    .AsNoTracking().ToListAsync();
-        var doctorNames = await _db.Doctors.AsNoTracking().ToDictionaryAsync(d => d.UserId, d => d.FullName);
+        var doctorNames = await _db.Doctors.AsNoTracking().ToDictionaryAsync(d => d.UserId, d => d.User.FullName);
         var patientNames = await _db.Patients.Where(p => p.UserId != null).AsNoTracking()
-                                    .ToDictionaryAsync(p => p.UserId!.Value, p => p.FullName);
+                                    .ToDictionaryAsync(p => p.UserId!.Value, p => p.User.FullName);
 
         var model = users.Select(u => new DevLoginUser(
-            u.UserId, u.Role, u.Email,
+            u.UserId, u.Role.ToString(), u.Email,
             doctorNames.GetValueOrDefault(u.UserId) ?? patientNames.GetValueOrDefault(u.UserId) ?? u.Email)).ToList();
         return View(model);
     }
@@ -58,11 +59,11 @@ public class AccountController : Controller
     {
         if (!_env.IsDevelopment()) return NotFound();
 
-        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId && u.AccountStatus == "Active");
+        var user = await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.UserId == userId && u.AccountStatus == AccountStatus.Active);
         if (user == null) return RedirectToAction(nameof(Login));
 
         await SignInAsUserAsync(user);
-        return RedirectToHome(user.Role);
+        return RedirectToHome(user.Role.ToString());
     }
 
     [HttpPost, ValidateAntiForgeryToken]
@@ -100,7 +101,7 @@ public class AccountController : Controller
         {
             new(ClaimTypes.NameIdentifier, user.UserId.ToString()),   // read by CurrentUserService.UserId
             new(ClaimTypes.Name, user.Email),
-            new(ClaimTypes.Role, user.Role)                           // used by [Authorize(Roles = ...)]
+            new(ClaimTypes.Role, user.Role.ToString())                           // used by [Authorize(Roles = ...)]
         };
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
