@@ -1,4 +1,5 @@
 using ClinicSystem.Models.Entities;
+using ClinicSystem.Models.Drugs;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

@@ -1,5 +1,4 @@
-﻿using ClinicSystem.Models.UsersAccount;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ClinicSystem.Models.Entities;
@@ -7,11 +6,10 @@ namespace ClinicSystem.Models.Entities;
 public enum ReportType
 {
     AppointmentReport,
-    ConsultationReport,
+    AppointmentSummaryReport,
     MedicalVisitReport,
     PrescriptionReport,
     PatientMedicalHistoryReport,
-    AppointmentSummaryReport,
     DrugInventoryReport,
     ClinicOverallPerformanceReport,
 }
@@ -22,12 +20,7 @@ public class GeneratedReportHistory
     public int ReportID { get; set; }
 
     [Required]
-    [MaxLength(11)]
-    public string UserID { get; set; }
-
-    [Required]
-    [MaxLength(100)]
-    public string ReportName { get; set; }
+    public int UserID { get; set; }
 
     [Required]
     public ReportType ReportType { get; set; }

@@ -1,8 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ClinicSystem.Models.Entities;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ClinicSystem.Models.Entities;
+namespace ClinicSystem.Models.Drugs;
 
 public enum StockStatus
 {
@@ -34,8 +35,8 @@ public class Drug
 {
     [Key]
     [MaxLength(11)]
-    [DatabaseGenerated(DatabaseGeneratedOption.None)] // Since DrugID is a Varchar(11) custom ID
-    public string DrugID { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.None)] // Since DrugId is a Varchar(11) custom ID
+    public int DrugId { get; set; }
 
     [Required]
     [MaxLength(100)]

@@ -1,3 +1,4 @@
+using ClinicSystem.Models.Entities;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace ClinicSystem.Data;
@@ -10,6 +11,24 @@ namespace ClinicSystem.Data;
 /// </summary>
 public static class ReportViews
 {
+    private const string DrugInventoryReport = """
+        CREATE VIEW vw_DrugInventoryReport AS 
+        SELECT DrugId, DrugName, DrugCategory,MedicalUses,UnitPrice,StockQuantity,MinStockLevel, StockStatus
+        FROM Drugs
+        """;
+
+    private const string ClinicOverallPerformanceReport = """
+        CREATE VIEW vw_ClinicOverallPerformanceReport AS
+        SELECT 
+            (SELECT COUNT(*) FROM Patients) AS TotalPatients,
+            (SELECT COUNT(*) FROM Doctors) AS TotalDoctors,
+            (SELECT COUNT(*) FROM Appointments) AS TotalAppointments,
+            (SELECT COUNT(*) FROM MedicalVisits) AS TotalMedicalVisits,
+            (SELECT COUNT(*) FROM Prescriptions) AS TotalPrescriptions,
+            (SELECT COUNT(*) FROM Invoices) AS TotalInvoices,
+            (SELECT SUM(TotalAmount) FROM Invoices WHERE Status = 'Paid') AS TotalRevenue
+        """;
+
     private const string AppointmentReport = """
         CREATE VIEW vw_AppointmentReport AS
         SELECT a.AppointmentId, a.AppointmentDate, a.StartTime, a.Status,
@@ -33,18 +52,20 @@ public static class ReportViews
         """;
 
     private const string PatientMedicalReport = """
-        CREATE VIEW vw_PatientMedicalReport AS
-        SELECT v.VisitId, v.PatientId, v.VisitDate, d.FullName AS DoctorName,
-               v.Diagnosis, v.Treatment, v.FollowUpDate,
-               m.Name AS MedicineName, pr.Dosage, pr.Frequency, pr.Quantity, pr.Instructions
-        FROM MedicalVisits v
-        JOIN Doctors d             ON d.DoctorId = v.DoctorId
+        
+        CREATE VIEW vw_PatientMedicalReport AS 
+        SELECT v.VisitId, v.PatientId, v.VisitDate, d.FullName AS DoctorName, 
+               v.Diagnosis, v.Treatment, v.FollowUpDate, dr.DrugName AS MedicineName, pr.Dosage, 
+               pr.Frequency, pr.Quantity, pr.Instructions
+        FROM MedicalVisits v 
+        JOIN Doctors d      ON d.DoctorId = v.DoctorId 
         LEFT JOIN Prescriptions pr ON pr.VisitId = v.VisitId
-        LEFT JOIN Medicines m      ON m.MedicineId = pr.MedicineId
+        LEFT JOIN Drugs dr ON dr.DrugId = pr.DrugId
         WHERE v.IsDeleted = 0;
+        
         """;
 
-    private static readonly string[] ViewNames = { "vw_AppointmentReport", "vw_PaymentReport", "vw_PatientMedicalReport" };
+    private static readonly string[] ViewNames = { "vw_AppointmentReport", "vw_PaymentReport", "vw_PatientMedicalReport", "vw_ClinicOverallPerformanceReport", "vw_DrugInventoryReport" };
 
     public static void Create(MigrationBuilder migrationBuilder)
     {
@@ -52,6 +73,8 @@ public static class ReportViews
         migrationBuilder.Sql(AppointmentReport);
         migrationBuilder.Sql(PaymentReport);
         migrationBuilder.Sql(PatientMedicalReport);
+        migrationBuilder.Sql(ClinicOverallPerformanceReport);
+        migrationBuilder.Sql(DrugInventoryReport);
     }
 
     public static void Drop(MigrationBuilder migrationBuilder)

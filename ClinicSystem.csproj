@@ -11,8 +11,12 @@
        Their project has its own .csproj; we must not compile it as part of ours. -->
   <ItemGroup>
     <Compile Remove="ClinicAppointmentSystem/**" />
+    <Compile Remove="Models\UsersAccount\**" />
     <Content Remove="ClinicAppointmentSystem/**" />
+    <Content Remove="Models\UsersAccount\**" />
+    <EmbeddedResource Remove="Models\UsersAccount\**" />
     <None Remove="ClinicAppointmentSystem/**" />
+    <None Remove="Models\UsersAccount\**" />
   </ItemGroup>
 
   <ItemGroup>

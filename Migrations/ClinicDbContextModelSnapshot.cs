@@ -22,6 +22,46 @@ namespace ClinicSystem.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ClinicSystem.Models.Drugs.Drug", b =>
+                {
+                    b.Property<int>("DrugId")
+                        .HasMaxLength(11)
+                        .HasColumnType("int");
+
+                    b.Property<int>("DrugCategory")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DrugName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("MedicalUses")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("MinStockLevel")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StockQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StockStatus")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("DrugId");
+
+                    b.ToTable("Drugs", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Drugs_Stock", "[StockQuantity] >= 0");
+                        });
+                });
+
             modelBuilder.Entity("ClinicSystem.Models.Entities.Appointment", b =>
                 {
                     b.Property<int>("AppointmentId")
@@ -296,6 +336,30 @@ namespace ClinicSystem.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ClinicSystem.Models.Entities.GeneratedReportHistory", b =>
+                {
+                    b.Property<int>("ReportID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReportID"));
+
+                    b.Property<DateTime>("GeneratedDateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ReportType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("ReportID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("GeneratedReportHistories");
+                });
+
             modelBuilder.Entity("ClinicSystem.Models.Entities.Invoice", b =>
                 {
                     b.Property<int>("InvoiceId")
@@ -405,7 +469,7 @@ namespace ClinicSystem.Migrations
 
                     b.ToTable("InvoiceItems", null, t =>
                         {
-                            t.HasCheckConstraint("CK_InvoiceItems_Type", "[ItemType] IN ('Consultation','Medicine','Other')");
+                            t.HasCheckConstraint("CK_InvoiceItems_Type", "[ItemType] IN ('Consultation','Drug','Other')");
                         });
                 });
 
@@ -472,55 +536,6 @@ namespace ClinicSystem.Migrations
                     b.HasIndex("PatientId");
 
                     b.ToTable("MedicalVisits", (string)null);
-                });
-
-            modelBuilder.Entity("ClinicSystem.Models.Entities.Medicine", b =>
-                {
-                    b.Property<int>("MedicineId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MedicineId"));
-
-                    b.Property<string>("DosageForm")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateOnly?>("ExpiryDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("GenericName")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<int>("ReorderLevel")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StockQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Strength")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)");
-
-                    b.HasKey("MedicineId");
-
-                    b.ToTable("Medicines", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_Medicines_Stock", "[StockQuantity] >= 0");
-                        });
                 });
 
             modelBuilder.Entity("ClinicSystem.Models.Entities.Notification", b =>
@@ -762,6 +777,12 @@ namespace ClinicSystem.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("DrugId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DrugId1")
+                        .HasColumnType("int");
+
                     b.Property<int?>("DurationDays")
                         .HasColumnType("int");
 
@@ -774,9 +795,6 @@ namespace ClinicSystem.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
-                    b.Property<int>("MedicineId")
-                        .HasColumnType("int");
-
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
@@ -785,7 +803,9 @@ namespace ClinicSystem.Migrations
 
                     b.HasKey("PrescriptionId");
 
-                    b.HasIndex("MedicineId");
+                    b.HasIndex("DrugId");
+
+                    b.HasIndex("DrugId1");
 
                     b.HasIndex("VisitId");
 
@@ -863,6 +883,41 @@ namespace ClinicSystem.Migrations
 
                             t.HasCheckConstraint("CK_Users_Status", "[AccountStatus] IN ('Active','Blocked','Deactivated')");
                         });
+                });
+
+            modelBuilder.Entity("ClinicSystem.Models.ViewModels.DrugInventoryReportView", b =>
+                {
+                    b.Property<string>("DrugCategory")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DrugId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DrugName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MedicalUses")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MinStockLevel")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StockQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StockStatus")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("vw_DrugInventoryReport", (string)null);
                 });
 
             modelBuilder.Entity("ClinicSystem.Models.Entities.Appointment", b =>
@@ -945,6 +1000,17 @@ namespace ClinicSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("Doctor");
+                });
+
+            modelBuilder.Entity("ClinicSystem.Models.Entities.GeneratedReportHistory", b =>
+                {
+                    b.HasOne("ClinicSystem.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ClinicSystem.Models.Entities.Invoice", b =>
@@ -1073,11 +1139,16 @@ namespace ClinicSystem.Migrations
 
             modelBuilder.Entity("ClinicSystem.Models.Entities.Prescription", b =>
                 {
-                    b.HasOne("ClinicSystem.Models.Entities.Medicine", "Medicine")
+                    b.HasOne("ClinicSystem.Models.Drugs.Drug", "Drug")
                         .WithMany()
-                        .HasForeignKey("MedicineId")
+                        .HasForeignKey("DrugId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("ClinicSystem.Models.Drugs.Drug", null)
+                        .WithMany("Prescriptions")
+                        .HasForeignKey("DrugId1")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ClinicSystem.Models.Entities.MedicalVisit", "Visit")
                         .WithMany("Prescriptions")
@@ -1085,9 +1156,14 @@ namespace ClinicSystem.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Medicine");
+                    b.Navigation("Drug");
 
                     b.Navigation("Visit");
+                });
+
+            modelBuilder.Entity("ClinicSystem.Models.Drugs.Drug", b =>
+                {
+                    b.Navigation("Prescriptions");
                 });
 
             modelBuilder.Entity("ClinicSystem.Models.Entities.Invoice", b =>

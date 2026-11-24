@@ -1,3 +1,5 @@
+using ClinicSystem.Models.Drugs;
+using ClinicSystem.Models.ViewModels;
 using ClinicSystem.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,6 +40,8 @@ public class ClinicDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<GeneratedReportHistory> GeneratedReportHistories { get; set; }
+    public DbSet<AppointmentReportView> AppointmentReports => Set<AppointmentReportView>();
+    public DbSet<DrugInventoryReportView> DrugInventoryReports { get; set; }
 
     // Shared settings
     private const string UtcNowSql = "SYSUTCDATETIME()";   // default for CreatedAt-style columns
@@ -221,6 +225,17 @@ public class ClinicDbContext : DbContext
             e.Property(a => a.CreatedAt).HasDefaultValueSql(UtcNowSql);
         });
 
+        modelBuilder.Entity<DrugInventoryReportView>(e=>
+        {
+            e.HasNoKey();
+            e.ToView("vw_DrugInventoryReport"); }
+        );
+
+        modelBuilder.Entity<AppointmentReportView>(e =>
+        {
+            e.HasNoKey();
+            e.ToView("vw_AppointmentReport");
+        });
 
 
         // No cascade deletes anywhere. Medical and payment records must never vanish because
