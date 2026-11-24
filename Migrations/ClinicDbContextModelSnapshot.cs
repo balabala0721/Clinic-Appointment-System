@@ -28,51 +28,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
 
         SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("ClinicSystem.Models.Drugs.Drug", b =>
-                {
-                    b.Property<int>("DrugId")
-                        .HasMaxLength(11)
-                        .HasColumnType("int");
-
-                    b.Property<int>("DrugCategory")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DrugName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("MedicalUses")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<int>("MinStockLevel")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StockQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StockStatus")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)");
-
-                    b.HasKey("DrugId");
-
-                    b.ToTable("Drugs", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_Drugs_Stock", "[StockQuantity] >= 0");
-                        });
-                });
-
-            modelBuilder.Entity("ClinicSystem.Models.Entities.Appointment", b =>
-                {
-                    b.Property<int>("AppointmentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
         modelBuilder.Entity("ClinicSystem.Models.Account.Doctor", b =>
             {
                 var doctorId = b.Property<int>("DoctorId")
@@ -536,35 +491,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                     });
             });
 
-            modelBuilder.Entity("ClinicSystem.Models.Entities.GeneratedReportHistory", b =>
-                {
-                    b.Property<int>("ReportID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReportID"));
-
-                    b.Property<DateTime>("GeneratedDateTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ReportType")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserID")
-                        .HasColumnType("int");
-
-                    b.HasKey("ReportID");
-
-                    b.HasIndex("UserID");
-
-                    b.ToTable("GeneratedReportHistories");
-                });
-
-            modelBuilder.Entity("ClinicSystem.Models.Entities.Invoice", b =>
-                {
-                    b.Property<int>("InvoiceId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
         modelBuilder.Entity("ClinicSystem.Models.Entities.Drug", b =>
             {
                 b.Property<int>("DrugID")
@@ -750,11 +676,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                         t.HasCheckConstraint("CK_InvoiceItems_Type", "[ItemType] IN ('Consultation','Drug','Other')");
                     });
             });
-                    b.ToTable("InvoiceItems", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_InvoiceItems_Type", "[ItemType] IN ('Consultation','Drug','Other')");
-                        });
-                });
 
         modelBuilder.Entity("ClinicSystem.Models.Entities.MedicalVisit", b =>
             {
@@ -821,11 +742,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                 b.ToTable("MedicalVisits");
             });
 
-            modelBuilder.Entity("ClinicSystem.Models.Entities.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
         modelBuilder.Entity("ClinicSystem.Models.Entities.Notification", b =>
             {
                 var notificationId = b.Property<int>("NotificationId")
@@ -994,14 +910,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                     .HasMaxLength(50)
                     .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("DrugId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DrugId1")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DurationDays")
-                        .HasColumnType("int");
                 b.Property<int>("DrugId")
                     .HasColumnType("int");
 
@@ -1017,8 +925,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                     .HasMaxLength(300)
                     .HasColumnType("nvarchar(300)");
 
-                    b.Property<int>("Quantity")
-                        .HasColumnType("int");
                 b.Property<int>("Quantity")
                     .HasColumnType("int");
 
@@ -1027,9 +933,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
 
                 b.HasKey("PrescriptionId");
 
-                    b.HasIndex("DrugId");
-
-                    b.HasIndex("DrugId1");
                 b.HasIndex("DrugId");
 
                 b.HasIndex("VisitId");
@@ -1074,48 +977,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                     .IsRequired();
             });
 
-            modelBuilder.Entity("ClinicSystem.Models.ViewModels.DrugInventoryReportView", b =>
-                {
-                    b.Property<string>("DrugCategory")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("DrugId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("DrugName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MedicalUses")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("MinStockLevel")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StockQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StockStatus")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)");
-
-                    b.ToTable((string)null);
-
-                    b.ToView("vw_DrugInventoryReport", (string)null);
-                });
-
-            modelBuilder.Entity("ClinicSystem.Models.Entities.Appointment", b =>
-                {
-                    b.HasOne("ClinicSystem.Models.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("BookedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
         modelBuilder.Entity("ClinicSystem.Models.Entities.Appointment", b =>
             {
                 b.HasOne("ClinicSystem.Models.Account.User", null)
@@ -1192,24 +1053,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                 b.Navigation("User");
             });
 
-            modelBuilder.Entity("ClinicSystem.Models.Entities.GeneratedReportHistory", b =>
-                {
-                    b.HasOne("ClinicSystem.Models.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("ClinicSystem.Models.Entities.Invoice", b =>
-                {
-                    b.HasOne("ClinicSystem.Models.Entities.Patient", "Patient")
-                        .WithMany()
-                        .HasForeignKey("PatientId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
         modelBuilder.Entity("ClinicSystem.Models.Entities.Invoice", b =>
             {
                 b.HasOne("ClinicSystem.Models.Account.Patient", "Patient")
@@ -1326,13 +1169,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                 b.Navigation("Payment");
             });
 
-            modelBuilder.Entity("ClinicSystem.Models.Entities.Prescription", b =>
-                {
-                    b.HasOne("ClinicSystem.Models.Drugs.Drug", "Drug")
-                        .WithMany()
-                        .HasForeignKey("DrugId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
         modelBuilder.Entity("ClinicSystem.Models.Entities.Prescription", b =>
             {
                 b.HasOne("ClinicSystem.Models.Entities.Drug", "Drug")
@@ -1341,36 +1177,17 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                     .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired();
 
-                    b.HasOne("ClinicSystem.Models.Drugs.Drug", null)
-                        .WithMany("Prescriptions")
-                        .HasForeignKey("DrugId1")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ClinicSystem.Models.Entities.MedicalVisit", "Visit")
-                        .WithMany("Prescriptions")
-                        .HasForeignKey("VisitId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
                 b.HasOne("ClinicSystem.Models.Entities.MedicalVisit", "Visit")
                     .WithMany("Prescriptions")
                     .HasForeignKey("VisitId")
                     .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired();
 
-                    b.Navigation("Drug");
                 b.Navigation("Drug");
 
                 b.Navigation("Visit");
             });
 
-            modelBuilder.Entity("ClinicSystem.Models.Drugs.Drug", b =>
-                {
-                    b.Navigation("Prescriptions");
-                });
-
-            modelBuilder.Entity("ClinicSystem.Models.Entities.Invoice", b =>
-                {
-                    b.Navigation("Items");
         modelBuilder.Entity("ClinicSystem.Models.Entities.Drug", b =>
             {
                 b.Navigation("Prescriptions");

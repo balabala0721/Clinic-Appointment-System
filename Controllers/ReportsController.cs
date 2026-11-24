@@ -1,10 +1,11 @@
 ﻿using ClinicSystem.Data;
 using ClinicSystem.Models.Entities;
 using ClinicSystem.Models.ViewModels;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ClinicSystem.Controllers;
 
@@ -140,8 +141,28 @@ public class ReportsController : Controller
     [Authorize(Roles = "Patient")]
     public IActionResult Appointment()
     {
+        // Get current logged-in UserID
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(userIdValue, out int userId))
+        {
+            return Unauthorized();
+        }
+
+        // Find current Patient
+        var patient = db.Patients
+            .AsNoTracking()
+            .FirstOrDefault(p => p.UserId == userId);
+
+        if (patient == null)
+        {
+            return NotFound("Patient record not found.");
+        }
+
+        // Get only this patient's appointments
         var reports = db.AppointmentReports
             .AsNoTracking()
+            .Where(a => a.PatientId == patient.PatientId)
             .ToList();
 
         return View(reports);
@@ -193,7 +214,7 @@ public class ReportsController : Controller
     {
         var report = db.GeneratedReportHistories
             .AsNoTracking()
-            .FirstOrDefault(r => r.ReportID == id);
+            .FirstOrDefault(r => r.ReportId == id);
 
         if (report == null)
         {

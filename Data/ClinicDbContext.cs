@@ -75,11 +75,20 @@ public class ClinicDbContext : DbContext
 
         modelBuilder.Entity<Patient>(e =>
         {
-            e.ToTable("Patients", t => t.HasCheckConstraint("CK_Patients_Gender", "[Gender] IN ('Male','Female')"));
-            e.HasOne<User>().WithMany().HasForeignKey(p => p.UserId);
-            e.HasIndex(p => p.UserId).IsUnique();          // one patient profile per login
-            e.HasIndex(p => p.IdNumber).IsUnique();        // EF makes nullable unique indexes ignore NULLs
-            e.Property(p => p.User.CreatedAt).HasDefaultValueSql(UtcNowSql);
+            e.ToTable("Patients", t =>
+                t.HasCheckConstraint(
+                    "CK_Patients_Gender",
+                    "[Gender] IN ('Male','Female','Other')"
+                )
+            );
+
+            e.HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasIndex(p => p.UserId).IsUnique();
+            e.HasIndex(p => p.IdNumber).IsUnique();
         });
 
         // ---------------------------------------------------------- doctors
@@ -92,9 +101,18 @@ public class ClinicDbContext : DbContext
         modelBuilder.Entity<Doctor>(e =>
         {
             e.ToTable("Doctors");
-            e.HasOne<User>().WithMany().HasForeignKey(d => d.UserId);
+
+            e.HasOne(d => d.User)
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             e.HasIndex(d => d.UserId).IsUnique();
-            e.HasOne(d => d.Specialisation).WithMany().HasForeignKey(d => d.SpecialisationId);
+
+            e.HasOne(d => d.Specialisation)
+                .WithMany()
+                .HasForeignKey(d => d.SpecialisationId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ------------------------------------------------------- scheduling

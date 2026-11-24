@@ -17,18 +17,18 @@
         @foreach (var report in Model)
         {
             <tr>
-                <td>@report.ReportID</td>
+                <td>@report.ReportId</td>
                 <td>@report.ReportType</td>
                 <td>@report.GeneratedDateTime.ToString("dd/MM/yyyy HH:mm")</td>
                 <td>
                     <a asp-action="Details"
-                       asp-route-id="@report.ReportID"
+                       asp-route-id="@report.ReportId"
                        class="btn btn-info btn-sm">
                         Details
                     </a>
 
                     <form asp-action="Delete"
-                          asp-route-id="@report.ReportID"
+                          asp-route-id="@report.ReportId"
                           method="post"
                           style="display:inline">
                         @Html.AntiForgeryToken()
