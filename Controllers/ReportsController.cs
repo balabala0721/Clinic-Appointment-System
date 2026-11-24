@@ -137,9 +137,14 @@ public class ReportsController : Controller
     }
 
     // Appointment Report
+    [Authorize(Roles = "Patient")]
     public IActionResult Appointment()
     {
-        return View();
+        var reports = db.AppointmentReports
+            .AsNoTracking()
+            .ToList();
+
+        return View(reports);
     }
 
     // Consultation Report
