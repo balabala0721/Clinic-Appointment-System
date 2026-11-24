@@ -1,5 +1,22 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
-}
+﻿@model ClinicSystem.Models.Entities.GeneratedReportHistory
+
+<h2>Report Details</h2>
+
+<div class="card">
+    <div class="card-body">
+        <p><strong>Report ID:</strong> @Model.ReportId</p>
+
+        <p><strong>Report Type:</strong> @Model.ReportType</p>
+
+        <p>
+            <strong>Generated Date:</strong>
+            @Model.GeneratedDateTime.ToString("dd/MM/yyyy HH:mm")
+        </p>
+
+        <p><strong>User ID:</strong> @Model.UserID</p>
+
+        <a asp-action="History" class="btn btn-secondary">
+            Back to History
+        </a>
+    </div>
+</div>

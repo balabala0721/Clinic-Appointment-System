@@ -17,9 +17,7 @@ namespace ClinicSystem.Models.Account
         Deactivated
     }
 
-    [Index("Username", IsUnique = true)]
     [Index("Email", IsUnique = true)]
-    [Index("PhoneNo", IsUnique = true)]
     public class User
     {
         [Key]
