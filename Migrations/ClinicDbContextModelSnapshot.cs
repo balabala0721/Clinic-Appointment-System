@@ -17,7 +17,7 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261123113442_EditSpecialisationAnnotation";
+    public override string LastMigrationId => "20261123152309_AddPatientNationality";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -111,6 +111,10 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                     .HasColumnType("nvarchar(20)");
 
                 b.Property<string>("IdType")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("Nationality")
                     .IsRequired()
                     .HasColumnType("nvarchar(max)");
 

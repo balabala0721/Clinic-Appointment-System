@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ClinicSystem.Models.Account
@@ -16,6 +17,21 @@ namespace ClinicSystem.Models.Account
         Other
     }
 
+    public enum Nationality
+    {
+        Malaysian,
+        Singaporean,
+        Indonesian,
+        Thai,
+        Vietnamese,
+        Filipino,
+        Chinese,
+        Combodian,
+        Other
+    }
+
+    [Index("IdNumber", IsUnique = true)]
+    [Index("EmergencyContactPhone", IsUnique = true)]   
     public class Patient
     {
         [Required]
@@ -45,6 +61,8 @@ namespace ClinicSystem.Models.Account
 
         [MaxLength(20)]
         public string EmergencyContactPhone { get; set; } = " ";
+
+        public Nationality Nationality { get; set; }
 
         public string? Address { get; set; }
 

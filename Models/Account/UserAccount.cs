@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace ClinicSystem.Models.Account
 {
@@ -16,16 +17,15 @@ namespace ClinicSystem.Models.Account
         Deactivated
     }
 
+    [Index("Username", IsUnique = true)]
+    [Index("Email", IsUnique = true)]
+    [Index("PhoneNo", IsUnique = true)]
     public class User
     {
         [Key]
         [Required]
         [MaxLength(11)]
         public int UserId { get; set; }
-
-        [Required]
-        [MaxLength(30)]
-        public string Username { get; set; } = " ";
 
         [Required]
         [MaxLength(100)]
