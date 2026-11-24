@@ -1,12 +1,12 @@
 @model EditScheduleViewModel
 @{
-    ViewData["Title"] = "Schedule - " + Model.Doctor.FullName;
+    ViewData["Title"] = "Schedule - " + Model.Doctor.User.FullName;
     var days = Enumerable.Range(0, 7).Select(i => (Value: i, Name: ((System.DayOfWeek)i).ToString())).ToList();
     var editing = Model.Form.ScheduleId != 0;
 }
 
 <a asp-action="Index" class="small">&larr; All schedules</a>
-<h1 class="h4 mt-2 mb-4">@Model.Doctor.FullName <span class="text-muted h6">@Model.Doctor.Specialisation?.Name</span></h1>
+<h1 class="h4 mt-2 mb-4">@Model.Doctor.User.FullName <span class="text-muted h6">@Model.Doctor.Specialisation?.Name</span></h1>
 
 <div class="row g-4">
     <div class="col-lg-7">

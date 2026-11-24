@@ -56,7 +56,7 @@
                     <tr>
                         <td>@a.AppointmentDate.ToString("d MMM")</td>
                         <td>@a.StartTime.ToString("HH:mm")</td>
-                        <td>@a.Patient?.FullName</td>
+                        <td>@a.Patient?.User.FullName</td>
                         <td class="small">@(a.ReasonForVisit ?? "-")</td>
                         <td>@a.Status</td>
                         <td class="text-end">

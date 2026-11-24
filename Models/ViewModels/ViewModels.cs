@@ -3,6 +3,7 @@ using ClinicSystem.Config;
 using ClinicSystem.Models.Entities;
 using ClinicSystem.Services;
 using ClinicSystem.Services.Ai;
+using ClinicSystem.Models.Account;
 
 namespace ClinicSystem.Models.ViewModels;
 

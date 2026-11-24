@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ClinicSystem.Models.Account;
 
 namespace ClinicSystem.Models.Entities;
 
@@ -17,7 +18,7 @@ public enum ReportType
 public class GeneratedReportHistory
 {
     [Key] // Int primary key auto-increments by convention in EF Core
-    public int ReportID { get; set; }
+    public int ReportId { get; set; }
 
     [Required]
     public int UserID { get; set; }
@@ -29,6 +30,6 @@ public class GeneratedReportHistory
     public DateTime GeneratedDateTime { get; set; } = DateTime.Now;
 
     // Navigation property linking to your User/Account model
-    [ForeignKey("UserID")]
+    [ForeignKey("UserId")]
     public User User { get; set; }
 }

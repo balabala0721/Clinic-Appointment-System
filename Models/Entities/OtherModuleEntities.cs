@@ -3,6 +3,7 @@ using ClinicSystem.Models.Drugs;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ClinicSystem.Models.Account;
 
 namespace ClinicSystem.Models.Entities;
 

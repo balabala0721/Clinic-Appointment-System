@@ -44,7 +44,7 @@
             @foreach (var row in Model.Rows)
             {
                 <tr>
-                    <td>@row.Doctor.FullName</td>
+                    <td>@row.Doctor.User.FullName</td>
                     <td>@row.Doctor.Specialisation?.Name</td>
                     <td class="small">
                         @if (row.Schedules.Count == 0)

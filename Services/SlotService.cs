@@ -35,7 +35,7 @@ public class SlotService
         if (toDate > lastBookable) toDate = lastBookable;
         if (fromDate > toDate) return new List<TimeSlot>();
 
-        var doctorActive = await _db.Doctors.AnyAsync(d => d.DoctorId == doctorId && d.IsActive);
+        var doctorActive = await _db.Doctors.AnyAsync(d => d.DoctorId == doctorId);
         if (!doctorActive) return new List<TimeSlot>();
 
         var schedules = await _db.DoctorSchedules

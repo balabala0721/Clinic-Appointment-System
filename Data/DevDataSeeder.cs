@@ -1,5 +1,6 @@
 using ClinicSystem.Config;
 using ClinicSystem.Models.Entities;
+using ClinicSystem.Models.Account;
 using Microsoft.EntityFrameworkCore;
 
 namespace ClinicSystem.Data;
@@ -32,33 +33,32 @@ public static class DevDataSeeder
         {
             Email = email + DemoEmailDomain,
             PasswordHash = DemoPasswordHash,
-            Role = role,
+            Role = Enum.Parse<Role>(role),
             CreatedAt = DateTime.UtcNow
         };
 
-        var admin = NewUser("admin", Roles.Admin);
-        var staff = NewUser("staff", Roles.Staff);
-        var uTan = NewUser("dr.tan", Roles.Doctor);
-        var uLim = NewUser("dr.lim", Roles.Doctor);
-        var uRaj = NewUser("dr.rajesh", Roles.Doctor);
-        var uAis = NewUser("dr.aisyah", Roles.Doctor);
-        var uAli = NewUser("ali", Roles.Patient);
-        var uMei = NewUser("meiling", Roles.Patient);
-        var uSiva = NewUser("siva", Roles.Patient);
-        db.Users.AddRange(admin, staff, uTan, uLim, uRaj, uAis, uAli, uMei, uSiva);
+        var admin = NewUser("admin", Roles.Admin.ToString());
+        var uTan = NewUser("dr.tan", Roles.Doctor.ToString());
+        var uLim = NewUser("dr.lim", Roles.Doctor.ToString());
+        var uRaj = NewUser("dr.rajesh", Roles.Doctor.ToString());
+        var uAis = NewUser("dr.aisyah", Roles.Doctor.ToString());
+        var uAli = NewUser("ali", Roles.Patient.ToString());
+        var uMei = NewUser("meiling", Roles.Patient.ToString());
+        var uSiva = NewUser("siva", Roles.Patient.ToString());
+        db.Users.AddRange(admin, uTan, uLim, uRaj, uAis, uAli, uMei, uSiva);
         await db.SaveChangesAsync();   // need the generated UserIds below
 
         // ---------------------------------------------------------------- doctors
-        var tan = new Doctor { UserId = uTan.UserId, SpecialisationId = gp.SpecialisationId, FullName = "Dr Tan Wei Ming", ConsultationFee = 40 };
-        var lim = new Doctor { UserId = uLim.UserId, SpecialisationId = gp.SpecialisationId, FullName = "Dr Lim Mei Ling", ConsultationFee = 40 };
-        var raj = new Doctor { UserId = uRaj.UserId, SpecialisationId = paeds.SpecialisationId, FullName = "Dr Rajesh Kumar", ConsultationFee = 60 };
-        var ais = new Doctor { UserId = uAis.UserId, SpecialisationId = derm.SpecialisationId, FullName = "Dr Nur Aisyah", ConsultationFee = 80 };
+        var tan = new Doctor { UserId = uTan.UserId, SpecialisationId = gp.SpecialisationId, User = new User { FullName = "Dr Tan Wei Ming" }, ConsultationFee = 40 };
+        var lim = new Doctor { UserId = uLim.UserId, SpecialisationId = gp.SpecialisationId, User = new User { FullName = "Dr Lim Mei Ling" }, ConsultationFee = 40 };
+        var raj = new Doctor { UserId = uRaj.UserId, SpecialisationId = paeds.SpecialisationId, User = new User { FullName = "Dr Rajesh Kumar" }, ConsultationFee = 60 };
+        var ais = new Doctor { UserId = uAis.UserId, SpecialisationId = derm.SpecialisationId, User = new User { FullName = "Dr Nur Aisyah" }, ConsultationFee = 80 };
         db.Doctors.AddRange(tan, lim, raj, ais);
 
         // --------------------------------------------------------------- patients
-        var ali = new Patient { UserId = uAli.UserId, FullName = "Ali bin Ahmad", Phone = "012-345 6789" };
-        var mei = new Patient { UserId = uMei.UserId, FullName = "Wong Mei Ling", Phone = "013-222 3344" };
-        var siva = new Patient { UserId = uSiva.UserId, FullName = "Siva Raman", Phone = "014-555 6677" };
+        var ali = new Patient { UserId = uAli.UserId, User = new User { FullName = "Ali bin Ahmad", PhoneNo = "012-345 6789" } };
+        var mei = new Patient { UserId = uMei.UserId, User = new User { FullName = "Wong Mei Ling", PhoneNo = "013-222 3344" } };
+        var siva = new Patient { UserId = uSiva.UserId, User = new User { FullName = "Siva Raman", PhoneNo = "014-555 6677" } };
         db.Patients.AddRange(ali, mei, siva);
         await db.SaveChangesAsync();
 
@@ -100,13 +100,13 @@ public static class DevDataSeeder
     public static async Task AddSampleAppointmentsAsync(ClinicDbContext db)
     {
         var today = ClinicClock.Today;
-        var tan = await db.Doctors.FirstAsync(d => d.FullName == "Dr Tan Wei Ming");
-        var lim = await db.Doctors.FirstAsync(d => d.FullName == "Dr Lim Mei Ling");
-        var raj = await db.Doctors.FirstAsync(d => d.FullName == "Dr Rajesh Kumar");
-        var ali = await db.Patients.FirstAsync(p => p.FullName == "Ali bin Ahmad");
-        var mei = await db.Patients.FirstAsync(p => p.FullName == "Wong Mei Ling");
-        var siva = await db.Patients.FirstAsync(p => p.FullName == "Siva Raman");
-        var adminId = await db.Users.Where(u => u.Role == Roles.Admin).Select(u => u.UserId).FirstAsync();
+        var tan = await db.Doctors.FirstAsync(d => d.User.FullName == "Dr Tan Wei Ming");
+        var lim = await db.Doctors.FirstAsync(d => d.User.FullName == "Dr Lim Mei Ling");
+        var raj = await db.Doctors.FirstAsync(d => d.User.FullName == "Dr Rajesh Kumar");
+        var ali = await db.Patients.FirstAsync(p => p.User.FullName == "Ali bin Ahmad");
+        var mei = await db.Patients.FirstAsync(p => p.User.FullName == "Wong Mei Ling");
+        var siva = await db.Patients.FirstAsync(p => p.User.FullName == "Siva Raman");
+        var adminId = await db.Users.Where(u => u.Role.ToString() == Roles.Admin).Select(u => u.UserId).FirstAsync();
 
         Appointment Appt(Patient p, Doctor d, DateOnly date, int h, int m, int lengthMin, string status, string reason) => new()
         {

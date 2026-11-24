@@ -175,7 +175,7 @@ public class AppointmentService
         if (doctorId.HasValue) query = query.Where(a => a.DoctorId == doctorId.Value);
         if (!string.IsNullOrWhiteSpace(status)) query = query.Where(a => a.Status == status);
         if (!string.IsNullOrWhiteSpace(patientName))
-            query = query.Where(a => a.Patient!.FullName.Contains(patientName));
+            query = query.Where(a => a.Patient!.User.FullName.Contains(patientName));
 
         return await query
             .OrderBy(a => a.AppointmentDate).ThenBy(a => a.StartTime)

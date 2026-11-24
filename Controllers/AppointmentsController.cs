@@ -36,8 +36,8 @@ public class AppointmentsController : Controller
         var vm = new BookPageViewModel
         {
             Specialisations = await _db.Specialisations.OrderBy(s => s.Name).AsNoTracking().ToListAsync(),
-            Doctors = await _db.Doctors.Include(d => d.Specialisation).Where(d => d.IsActive)
-                               .OrderBy(d => d.FullName).AsNoTracking().ToListAsync(),
+            Doctors = await _db.Doctors.Include(d => d.Specialisation)
+                               .OrderBy(d => d.User.FullName).AsNoTracking().ToListAsync(),
             PreselectedDoctorId = doctorId,
             PreselectedDate = (date.HasValue && date.Value >= today ? date.Value : today).ToString("yyyy-MM-dd"),
             MinDate = today.ToString("yyyy-MM-dd"),
@@ -125,7 +125,7 @@ public class AppointmentsController : Controller
             Status = status,
             Page = Math.Max(1, page),
             Appointments = await _appointments.SearchAsync(date, doctorId, patientName, status, page),
-            Doctors = await _db.Doctors.OrderBy(d => d.FullName).AsNoTracking().ToListAsync()
+            Doctors = await _db.Doctors.OrderBy(d => d.User.FullName).AsNoTracking().ToListAsync()
         };
         return View(vm);
     }
