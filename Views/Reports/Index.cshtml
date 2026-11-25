@@ -1,11 +1,45 @@
 ﻿@model ClinicSystem.Models.ViewModels.ReportViewModel
 
-<h2>Report Dashboard</h2>
+@{
+    ViewData["Title"] = "Report Management";
+}
 
-<p>Total Patients: @Model.TotalPatients</p>
+<h2>Report Management</h2>
 
-<p>Total Doctors: @Model.TotalDoctors</p>
+<div class="row">
 
-<p>Total Appointments: @Model.TotalAppointments</p>
+    <div class="col-md-3">
+        <h5>Total Patients</h5>
+        <h3>@Model.TotalPatients</h3>
+    </div>
 
-<p>Total Reports: @Model.TotalReports</p>
+    <div class="col-md-3">
+        <h5>Total Doctors</h5>
+        <h3>@Model.TotalDoctors</h3>
+    </div>
+
+    <div class="col-md-3">
+        <h5>Total Appointments</h5>
+        <h3>@Model.TotalAppointments</h3>
+    </div>
+
+    <div class="col-md-3">
+        <h5>Total Reports</h5>
+        <h3>@Model.TotalReports</h3>
+    </div>
+
+</div>
+
+<hr />
+
+<a asp-controller="Reports"
+   asp-action="Generate"
+   class="btn btn-primary">
+    Generate Report
+</a>
+
+<a asp-controller="Reports"
+   asp-action="History"
+   class="btn btn-secondary">
+    Report History
+</a>
