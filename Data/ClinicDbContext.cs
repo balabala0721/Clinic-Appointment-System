@@ -39,7 +39,8 @@ public class ClinicDbContext : DbContext
     public DbSet<PaymentCancellationRequest> PaymentCancellationRequests => Set<PaymentCancellationRequest>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-    public DbSet<GeneratedReportHistory> GeneratedReportHistories { get; set; }
+    public DbSet<GeneratedReportHistory> GeneratedReportHistories
+        => Set<GeneratedReportHistory>();
     public DbSet<AppointmentReportView> AppointmentReports => Set<AppointmentReportView>();
 
     public DbSet<DrugInventoryReportView> DrugInventoryReports { get; set; }
@@ -255,6 +256,18 @@ public class ClinicDbContext : DbContext
         {
             e.HasNoKey();
             e.ToView("vw_PaymentReport");
+        });
+
+        modelBuilder.Entity<GeneratedReportHistory>(e =>
+        {
+            e.ToTable("GeneratedReportHistories");
+
+            e.HasKey(r => r.ReportId);
+
+            e.HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
 
