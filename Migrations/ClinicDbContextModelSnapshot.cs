@@ -116,6 +116,31 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                     .IsUnique()
                     .HasFilter("[EmergencyContactPhone] IS NOT NULL");
 
+                        b1.Property<string>("PhoneNo")
+                            .IsRequired()
+                            .HasMaxLength(20)
+                            .HasColumnType("nvarchar(20)");
+
+                        b1.Property<string>("PhotoUrl")
+                            .IsRequired()
+                            .HasColumnType("nvarchar(max)");
+
+                        b1.Property<string>("Role")
+                            .IsRequired()
+                            .HasColumnType("nvarchar(max)");
+
+                        b1.Property<int>("UserId")
+                            .HasMaxLength(11)
+                            .HasColumnType("int");
+
+                        b1.Property<string>("Username")
+                            .IsRequired()
+                            .HasMaxLength(30)
+                            .HasColumnType("nvarchar(30)");
+                    });
+
+                b.HasKey("PatientId");
+
                 b.HasIndex("IdNumber")
                     .IsUnique()
                     .HasFilter("[IdNumber] IS NOT NULL");
@@ -878,6 +903,163 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                     {
                         t.HasCheckConstraint("CK_Prescriptions_Qty", "[Quantity] > 0");
                     });
+            });
+
+        modelBuilder.Entity("ClinicSystem.Models.ViewModels.AppointmentReportView", b =>
+            {
+                b.Property<DateOnly>("AppointmentDate")
+                    .HasColumnType("date");
+
+                b.Property<int>("AppointmentId")
+                    .HasColumnType("int");
+
+                b.Property<string>("DoctorName")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<int>("PatientId")
+                    .HasColumnType("int");
+
+                b.Property<string>("PatientName")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("Specialisation")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<TimeOnly>("StartTime")
+                    .HasColumnType("time");
+
+                b.Property<string>("Status")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.ToTable((string)null);
+
+                b.ToView("vw_AppointmentReport", (string)null);
+            });
+
+        modelBuilder.Entity("ClinicSystem.Models.ViewModels.DrugInventoryReportView", b =>
+            {
+                b.Property<string>("DrugCategory")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<int>("DrugId")
+                    .HasColumnType("int");
+
+                b.Property<string>("DrugName")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("MedicalUses")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<int>("MinStockLevel")
+                    .HasColumnType("int");
+
+                b.Property<int>("StockQuantity")
+                    .HasColumnType("int");
+
+                b.Property<string>("StockStatus")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<decimal>("UnitPrice")
+                    .HasPrecision(10, 2)
+                    .HasColumnType("decimal(10,2)");
+
+                b.ToTable((string)null);
+
+                b.ToView("vw_DrugInventoryReport", (string)null);
+            });
+
+        modelBuilder.Entity("ClinicSystem.Models.ViewModels.PatientMedicalReportView", b =>
+            {
+                b.Property<string>("Diagnosis")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("DoctorName")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("Dosage")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<DateOnly?>("FollowUpDate")
+                    .HasColumnType("date");
+
+                b.Property<string>("Frequency")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("Instructions")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("MedicineName")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<int>("PatientId")
+                    .HasColumnType("int");
+
+                b.Property<int?>("Quantity")
+                    .HasColumnType("int");
+
+                b.Property<string>("Treatment")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<DateTime>("VisitDate")
+                    .HasColumnType("datetime2");
+
+                b.Property<int>("VisitId")
+                    .HasColumnType("int");
+
+                b.ToTable((string)null);
+
+                b.ToView("vw_PatientMedicalReport", (string)null);
+            });
+
+        modelBuilder.Entity("ClinicSystem.Models.ViewModels.PaymentReportView", b =>
+            {
+                b.Property<string>("InvoiceNo")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("InvoiceStatus")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<DateTime>("IssuedAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<decimal>("PaidAmount")
+                    .HasPrecision(10, 2)
+                    .HasColumnType("decimal(10,2)");
+
+                b.Property<DateTime>("PaidAt")
+                    .HasColumnType("datetime2");
+
+                b.Property<int>("PatientId")
+                    .HasColumnType("int");
+
+                b.Property<string>("PatientName")
+                    .IsRequired()
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("PaymentMethod")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<string>("ReceiptNo")
+                    .HasColumnType("nvarchar(max)");
+
+                b.Property<decimal>("TotalAmount")
+                    .HasPrecision(10, 2)
+                    .HasColumnType("decimal(10,2)");
+
+                b.ToTable((string)null);
+
+                b.ToView("vw_PaymentReport", (string)null);
             });
 
         modelBuilder.Entity("ClinicSystem.Models.Account.Doctor", b =>

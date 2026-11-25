@@ -1,44 +1,51 @@
 ﻿@model IEnumerable<ClinicSystem.Models.Entities.GeneratedReportHistory>
 
-<h2>Report History</h2>
+@{
+    ViewData["Title"] = "Report History";
+}
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Report ID</th>
-            <th>Report Name</th>
-            <th>Report Type</th>
-            <th>Generated Date</th>
-            <th>Action</th>
-        </tr>
-    </thead>
+<div class="container mt-4">
+    <h2>Report History</h2>
 
-    <tbody>
-        @foreach (var report in Model)
-        {
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
             <tr>
-                <td>@report.ReportId</td>
-                <td>@report.ReportType</td>
-                <td>@report.GeneratedDateTime.ToString("dd/MM/yyyy HH:mm")</td>
-                <td>
-                    <a asp-action="Details"
-                       asp-route-id="@report.ReportId"
-                       class="btn btn-info btn-sm">
-                        Details
-                    </a>
-
-                    <form asp-action="Delete"
-                          asp-route-id="@report.ReportId"
-                          method="post"
-                          style="display:inline">
-                        @Html.AntiForgeryToken()
-                        <button type="submit"
-                                class="btn btn-danger btn-sm">
-                            Delete
-                        </button>
-                    </form>
-                </td>
+                <th>Report ID</th>
+                <th>Report Type</th>
+                <th>Generated Date</th>
+                <th>Action</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var report in Model)
+                {
+                    <tr>
+                        <td>@report.ReportId</td>
+                        <td>@report.ReportType</td>
+                        <td>@report.GeneratedDateTime.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            <a asp-action="Details"
+                               asp-route-id="@report.ReportId"
+                               class="btn btn-info btn-sm">
+                                Details
+                            </a>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="4" class="text-center">
+                        No report history available.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <a asp-action="Index" class="btn btn-secondary">Back</a>
+</div>

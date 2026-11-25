@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ClinicSystem.Migrations;
 
 /// <inheritdoc />
-public partial class _20261123100709_InitialCreate : Migration
+public partial class _20261124105648_InitialCreate : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
@@ -34,7 +34,7 @@ public partial class _20261123100709_InitialCreate : Migration
             name: "Specialisations",
             columns: table => new
             {
-                SpecialisationId = table.Column<int>(type: "int", nullable: false)
+                SpecialisationId = table.Column<int>(type: "int", maxLength: 11, nullable: false)
                     .Annotation("SqlServer:Identity", "1, 1"),
                 Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
             },
@@ -49,7 +49,6 @@ public partial class _20261123100709_InitialCreate : Migration
             {
                 UserId = table.Column<int>(type: "int", maxLength: 11, nullable: false)
                     .Annotation("SqlServer:Identity", "1, 1"),
-                Username = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
                 FullName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                 Email = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                 PhoneNo = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
@@ -57,8 +56,7 @@ public partial class _20261123100709_InitialCreate : Migration
                 Role = table.Column<string>(type: "nvarchar(max)", nullable: false),
                 AccountStatus = table.Column<string>(type: "nvarchar(max)", nullable: false),
                 CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                PhotoUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                LastLoginAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                PhotoUrl = table.Column<string>(type: "nvarchar(max)", nullable: false)
             },
             constraints: table =>
             {
@@ -97,17 +95,15 @@ public partial class _20261123100709_InitialCreate : Migration
             name: "Doctors",
             columns: table => new
             {
-                DoctorId = table.Column<int>(type: "int", nullable: false)
+                DoctorId = table.Column<int>(type: "int", maxLength: 11, nullable: false)
                     .Annotation("SqlServer:Identity", "1, 1"),
-                UserId = table.Column<int>(type: "int", nullable: false),
-                SpecialisationId = table.Column<int>(type: "int", nullable: false),
-                FullName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
-                MMCRegistrationNo = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true),
-                Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                UserId = table.Column<int>(type: "int", maxLength: 11, nullable: false),
+                Qualifications = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                YearsOfExperience = table.Column<int>(type: "int", nullable: false),
                 ConsultationFee = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
-                Bio = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                PhotoUrl = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                IsActive = table.Column<bool>(type: "bit", nullable: false)
+                Bio = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                SpecialisationId = table.Column<int>(type: "int", maxLength: 11, nullable: false),
+                UserId1 = table.Column<int>(type: "int", nullable: false)
             },
             constraints: table =>
             {
@@ -121,6 +117,12 @@ public partial class _20261123100709_InitialCreate : Migration
                 table.ForeignKey(
                     name: "FK_Doctors_Users_UserId",
                     column: x => x.UserId,
+                    principalTable: "Users",
+                    principalColumn: "UserId",
+                    onDelete: ReferentialAction.Restrict);
+                table.ForeignKey(
+                    name: "FK_Doctors_Users_UserId1",
+                    column: x => x.UserId1,
                     principalTable: "Users",
                     principalColumn: "UserId",
                     onDelete: ReferentialAction.Restrict);
@@ -177,20 +179,26 @@ public partial class _20261123100709_InitialCreate : Migration
             name: "Patients",
             columns: table => new
             {
-                PatientId = table.Column<int>(type: "int", nullable: false)
+                PatientId = table.Column<int>(type: "int", maxLength: 11, nullable: false)
                     .Annotation("SqlServer:Identity", "1, 1"),
-                UserId = table.Column<int>(type: "int", nullable: true),
-                FullName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
-                ICNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                Gender = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
-                DateOfBirth = table.Column<DateOnly>(type: "date", nullable: true),
-                Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                Address = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                EmergencyContactName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
-                EmergencyContactPhone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                Allergies = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
-                IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                UserId = table.Column<int>(type: "int", maxLength: 11, nullable: false),
+                IdType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                IdNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                Gender = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                DateOfBirth = table.Column<DateOnly>(type: "date", nullable: false),
+                EmergencyContactName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                EmergencyContactPhone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                Nationality = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                Address = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                User_AccountStatus = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                User_CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "SYSUTCDATETIME()"),
+                User_Email = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                User_FullName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                User_PasswordHash = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                User_PhoneNo = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                User_PhotoUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                User_Role = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                User_UserId = table.Column<int>(type: "int", maxLength: 11, nullable: false)
             },
             constraints: table =>
             {
@@ -590,6 +598,11 @@ public partial class _20261123100709_InitialCreate : Migration
             unique: true);
 
         migrationBuilder.CreateIndex(
+            name: "IX_Doctors_UserId1",
+            table: "Doctors",
+            column: "UserId1");
+
+        migrationBuilder.CreateIndex(
             name: "IX_DoctorSchedules_DoctorId",
             table: "DoctorSchedules",
             column: "DoctorId");
@@ -654,18 +667,22 @@ public partial class _20261123100709_InitialCreate : Migration
             column: "UserId");
 
         migrationBuilder.CreateIndex(
-            name: "IX_Patients_ICNumber",
+            name: "IX_Patients_EmergencyContactPhone",
             table: "Patients",
-            column: "ICNumber",
-            unique: true,
-            filter: "[ICNumber] IS NOT NULL");
+            column: "EmergencyContactPhone",
+            unique: true);
+
+        migrationBuilder.CreateIndex(
+            name: "IX_Patients_IdNumber",
+            table: "Patients",
+            column: "IdNumber",
+            unique: true);
 
         migrationBuilder.CreateIndex(
             name: "IX_Patients_UserId",
             table: "Patients",
             column: "UserId",
-            unique: true,
-            filter: "[UserId] IS NOT NULL");
+            unique: true);
 
         migrationBuilder.CreateIndex(
             name: "IX_PaymentCancellationRequests_PaymentId",

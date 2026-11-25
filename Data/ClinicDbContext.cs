@@ -1,5 +1,6 @@
-using ClinicSystem.Models.Entities;
 using ClinicSystem.Models.Account;
+using ClinicSystem.Models.Entities;
+using ClinicSystem.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
 namespace ClinicSystem.Data;
@@ -39,7 +40,14 @@ public class ClinicDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<GeneratedReportHistory> GeneratedReportHistories { get; set; }
+    public DbSet<AppointmentReportView> AppointmentReports => Set<AppointmentReportView>();
 
+    public DbSet<DrugInventoryReportView> DrugInventoryReports { get; set; }
+    public DbSet<PatientMedicalReportView> PatientMedicalReports
+    => Set<PatientMedicalReportView>();
+
+    public DbSet<PaymentReportView> PaymentReports
+        => Set<PaymentReportView>();
     // Shared settings
     private const string UtcNowSql = "SYSUTCDATETIME()";   // default for CreatedAt-style columns
     private const int MoneyPrecision = 10, MoneyScale = 2;   // DECIMAL(10,2)
@@ -224,6 +232,29 @@ public class ClinicDbContext : DbContext
             e.Property(a => a.CreatedAt).HasDefaultValueSql(UtcNowSql);
         });
 
+        modelBuilder.Entity<AppointmentReportView>(e =>
+        {
+            e.HasNoKey();
+            e.ToView("vw_AppointmentReport");
+        });
+
+        modelBuilder.Entity<DrugInventoryReportView>(e =>
+        {
+            e.HasNoKey();
+            e.ToView("vw_DrugInventoryReport");
+        });
+
+        modelBuilder.Entity<PatientMedicalReportView>(e =>
+        {
+            e.HasNoKey();
+            e.ToView("vw_PatientMedicalReport");
+        });
+
+        modelBuilder.Entity<PaymentReportView>(e =>
+        {
+            e.HasNoKey();
+            e.ToView("vw_PaymentReport");
+        });
 
 
         // No cascade deletes anywhere. Medical and payment records must never vanish because
