@@ -13,8 +13,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ClinicSystem.Migrations;
 
 [DbContext(typeof(ClinicDbContext))]
-[Migration("20261124105648_InitialCreate")]
-partial class _20261124105648_InitialCreate
+[Migration("20261125015756_InitialCreate")]
+partial class _20261125015756_InitialCreate
 {
     /// <inheritdoc />
     protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -539,17 +539,11 @@ partial class _20261124105648_InitialCreate
                 b.Property<DateTime>("GeneratedDateTime")
                     .HasColumnType("datetime2");
 
-                b.Property<string>("ReportName")
-                    .IsRequired()
-                    .HasMaxLength(100)
-                    .HasColumnType("nvarchar(100)");
-
                 b.Property<string>("ReportType")
                     .IsRequired()
                     .HasColumnType("nvarchar(max)");
 
                 b.Property<int>("UserId")
-                    .HasMaxLength(11)
                     .HasColumnType("int");
 
                 b.HasKey("ReportId");

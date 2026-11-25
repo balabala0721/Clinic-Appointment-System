@@ -41,18 +41,30 @@ public class MedicalVisit
 public class Prescription
 {
     public int PrescriptionId { get; set; }
+
     public int VisitId { get; set; }
-    public int DrugId { get; set; }
-    [MaxLength(50)] public string Dosage { get; set; } = "";     // e.g. 1 tablet
-    [MaxLength(50)] public string Frequency { get; set; } = "";  // e.g. 3 times a day
-    public int? DurationDays { get; set; }
-    public int Quantity { get; set; }
-    [MaxLength(300)] public string? Instructions { get; set; }   // e.g. after meals
 
-    public MedicalVisit? Visit { get; set; }
+    [Required]
     [MaxLength(11)]
-    public Drug? Drug { get; set; }
+    public string DrugId { get; set; } = "";
 
+    [MaxLength(50)]
+    public string Dosage { get; set; } = "";
+
+    [MaxLength(50)]
+    public string Frequency { get; set; } = "";
+
+    public int? DurationDays { get; set; }
+
+    public int Quantity { get; set; }
+
+    [MaxLength(300)]
+    public string? Instructions { get; set; }
+
+    // Navigation Properties
+    public MedicalVisit? Visit { get; set; }
+
+    public Drug? Drug { get; set; }
 }
 
 

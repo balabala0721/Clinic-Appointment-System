@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
+
 namespace ClinicSystem.Controllers;
 
 public class ReportsController : Controller
@@ -94,7 +95,7 @@ public class ReportsController : Controller
     }
 
 
-    [Authorize(Roles = "Admin,Doctor,Patient")]
+    [Authorize(Roles = Roles.Admin + "," + Roles.Doctor + "," + Roles.Patient)]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult Generate(GenerateReportViewModel model)
@@ -147,7 +148,7 @@ public class ReportsController : Controller
     }
 
 
-    [Authorize(Roles = "Admin,Doctor,Patient")]
+    [Authorize(Roles = Roles.Admin + "," + Roles.Doctor + "," + Roles.Patient)]
     public IActionResult History()
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -168,7 +169,7 @@ public class ReportsController : Controller
 
 
     // Appointment Report
-    [Authorize(Roles = "Patient")]
+    [Authorize(Roles = Roles.Patient)]
     public IActionResult Appointment()
     {
         // Get current logged-in UserID
@@ -239,7 +240,7 @@ public class ReportsController : Controller
     }
 
 
-    [Authorize(Roles = "Admin,Doctor,Patient")]
+    [Authorize]
     [HttpGet]
     public IActionResult Details(int id)
     {

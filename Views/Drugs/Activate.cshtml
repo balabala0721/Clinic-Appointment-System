@@ -1,0 +1,48 @@
+﻿@model ClinicSystem.Models.Entities.Drug
+
+@{
+    ViewData["Title"] = "Activate Drug";
+}
+
+<div class="container mt-4">
+    <h2>Activate Drug</h2>
+
+    <div class="card shadow-sm mt-3">
+        <div class="card-body">
+
+            <div class="alert alert-info">
+                <strong>Confirmation:</strong>
+                Are you sure you want to activate this drug?
+                This drug will become available for use again.
+            </div>
+
+            <dl class="row">
+                <dt class="col-sm-3">Drug ID</dt>
+                <dd class="col-sm-9">@Model.DrugID</dd>
+
+                <dt class="col-sm-3">Drug Name</dt>
+                <dd class="col-sm-9">@Model.DrugName</dd>
+
+                <dt class="col-sm-3">Category</dt>
+                <dd class="col-sm-9">@Model.DrugCategory</dd>
+
+                <dt class="col-sm-3">Unit Price</dt>
+                <dd class="col-sm-9">RM @Model.UnitPrice.ToString("F2")</dd>
+            </dl>
+
+            <form asp-action="Activate"
+                  asp-route-id="@Model.DrugID"
+                  method="post">
+
+                <button type="submit" class="btn btn-success">
+                    Confirm Activate
+                </button>
+
+                <a asp-action="Index" class="btn btn-secondary ms-2">
+                    Cancel
+                </a>
+            </form>
+
+        </div>
+    </div>
+</div>
