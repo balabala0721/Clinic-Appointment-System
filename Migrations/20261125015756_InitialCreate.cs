@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ClinicSystem.Migrations;
 
 /// <inheritdoc />
-public partial class _20261124105648_InitialCreate : Migration
+public partial class _20261125015756_InitialCreate : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
@@ -134,8 +134,7 @@ public partial class _20261124105648_InitialCreate : Migration
             {
                 ReportId = table.Column<int>(type: "int", nullable: false)
                     .Annotation("SqlServer:Identity", "1, 1"),
-                UserId = table.Column<int>(type: "int", maxLength: 11, nullable: false),
-                ReportName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                UserId = table.Column<int>(type: "int", nullable: false),
                 ReportType = table.Column<string>(type: "nvarchar(max)", nullable: false),
                 GeneratedDateTime = table.Column<DateTime>(type: "datetime2", nullable: false)
             },

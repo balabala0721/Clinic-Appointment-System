@@ -16,7 +16,7 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261124165148_FixPatientUserRelation";
+    public override string LastMigrationId => "20261125100557_AddDrugIsActive";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -455,9 +455,14 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
 
         modelBuilder.Entity("ClinicSystem.Models.Entities.Drug", b =>
             {
-                b.Property<int>("DrugID")
+                b.Property<string>("DrugID")
                     .HasMaxLength(11)
-                    .HasColumnType("int");
+                    .HasColumnType("nvarchar(11)");
+
+                b.Property<string>("Description")
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasColumnType("nvarchar(500)");
 
                 b.Property<string>("DrugCategory")
                     .IsRequired()
@@ -467,6 +472,9 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                     .IsRequired()
                     .HasMaxLength(100)
                     .HasColumnType("nvarchar(100)");
+
+                b.Property<bool>("IsActive")
+                    .HasColumnType("bit");
 
                 b.Property<string>("MedicalUses")
                     .IsRequired()
@@ -478,10 +486,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
 
                 b.Property<int>("StockQuantity")
                     .HasColumnType("int");
-
-                b.Property<string>("StockStatus")
-                    .IsRequired()
-                    .HasColumnType("nvarchar(max)");
 
                 b.Property<decimal>("UnitPrice")
                     .HasPrecision(10, 2)
@@ -506,17 +510,11 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                 b.Property<DateTime>("GeneratedDateTime")
                     .HasColumnType("datetime2");
 
-                b.Property<string>("ReportName")
-                    .IsRequired()
-                    .HasMaxLength(100)
-                    .HasColumnType("nvarchar(100)");
-
                 b.Property<string>("ReportType")
                     .IsRequired()
                     .HasColumnType("nvarchar(max)");
 
                 b.Property<int>("UserId")
-                    .HasMaxLength(11)
                     .HasColumnType("int");
 
                 b.HasKey("ReportId");
@@ -872,8 +870,10 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                     .HasMaxLength(50)
                     .HasColumnType("nvarchar(50)");
 
-                b.Property<int>("DrugId")
-                    .HasColumnType("int");
+                b.Property<string>("DrugId")
+                    .IsRequired()
+                    .HasMaxLength(11)
+                    .HasColumnType("nvarchar(11)");
 
                 b.Property<int?>("DurationDays")
                     .HasColumnType("int");

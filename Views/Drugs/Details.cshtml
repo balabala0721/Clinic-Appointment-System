@@ -1,0 +1,104 @@
+﻿@model ClinicSystem.Models.Entities.Drug
+
+@{
+    ViewData["Title"] = "Drug Details";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Drug Details</h2>
+
+        <a asp-action="Index" class="btn btn-secondary">
+            Back to Drug List
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">@Model.DrugName</h5>
+        </div>
+
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Drug ID</dt>
+                <dd class="col-sm-9">@Model.DrugID</dd>
+
+                <dt class="col-sm-3">Drug Name</dt>
+                <dd class="col-sm-9">@Model.DrugName</dd>
+
+                <dt class="col-sm-3">Category</dt>
+                <dd class="col-sm-9">@Model.DrugCategory</dd>
+
+                <dt class="col-sm-3">Description</dt>
+                <dd class="col-sm-9">@Model.Description</dd>
+
+                <dt class="col-sm-3">Medical Uses</dt>
+                <dd class="col-sm-9">@Model.MedicalUses</dd>
+
+                <dt class="col-sm-3">Unit Price</dt>
+                <dd class="col-sm-9">RM @Model.UnitPrice.ToString("F2")</dd>
+
+                <dt class="col-sm-3">Stock Quantity</dt>
+                <dd class="col-sm-9">@Model.StockQuantity</dd>
+
+                <dt class="col-sm-3">Minimum Stock Level</dt>
+                <dd class="col-sm-9">@Model.MinStockLevel</dd>
+
+                <dt class="col-sm-3">Stock Status</dt>
+                <dd class="col-sm-9">
+                    @if (Model.StockStatus == ClinicSystem.Models.Entities.StockStatus.InStock)
+                    {
+                        <span class="badge bg-success">In Stock</span>
+                    }
+                    else if (Model.StockStatus == ClinicSystem.Models.Entities.StockStatus.LowStock)
+                    {
+                        <span class="badge bg-warning text-dark">Low Stock</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger">Out of Stock</span>
+                    }
+                </dd>
+            </dl>
+            <hr />
+
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="d-flex gap-2">
+
+                    <a asp-action="Edit"
+                       asp-route-id="@Model.DrugID"
+                       class="btn btn-warning">
+                        <i class="bi bi-pencil-square"></i>
+                        Edit
+                    </a>
+
+                    @if (Model.IsActive)
+                    {
+                        <a asp-action="Deactivate"
+                           asp-route-id="@Model.DrugID"
+                           class="btn btn-danger">
+                            Deactivate
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-action="Activate"
+                           asp-route-id="@Model.DrugID"
+                           class="btn btn-success">
+                            Activate
+                        </a>
+                    }
+
+                    <a asp-action="Delete"
+                       asp-route-id="@Model.DrugID"
+                       class="btn btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                        Delete
+                    </a>
+
+                </div>
+            }
+        </div>
+    </div>
+</div>
