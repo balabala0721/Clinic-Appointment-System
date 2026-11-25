@@ -21,8 +21,6 @@ namespace ClinicSystem.Models.Account
     public class User
     {
         [Key]
-        [Required]
-        [MaxLength(11)]
         public int UserId { get; set; }
 
         [Required]
@@ -33,23 +31,19 @@ namespace ClinicSystem.Models.Account
         [MaxLength(50)]
         public string Email { get; set; } = " ";
 
-        [Required]
         [MaxLength(20)]
-        public string PhoneNo { get; set; } = " ";
+        public string? PhoneNo { get; set; }
 
         [Required]
         [MaxLength(256)]
         public string PasswordHash { get; set; } = " ";
 
-        [Required]
         public Role Role { get; set; } = Role.Patient;
 
-        [Required]
         public AccountStatus AccountStatus { get; set; } = AccountStatus.Active;
 
-        [Required]
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public string PhotoUrl { get; set; } = " ";
+        public string? PhotoUrl { get; set; }
     }
 }

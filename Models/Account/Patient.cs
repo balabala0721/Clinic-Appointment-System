@@ -34,38 +34,32 @@ namespace ClinicSystem.Models.Account
     [Index("EmergencyContactPhone", IsUnique = true)]   
     public class Patient
     {
-        [Required]
         [Key]
-        [MaxLength(11)]
         public int PatientId { get; set; }
 
         [Required]
-        [MaxLength(11)]
+        [ForeignKey("User")]
         public int? UserId { get; set; }
 
-        [Required]
-        public IdType IdType { get; set; } = IdType.NRIC;
+        public User User { get; set; } = null!;
+
+        public IdType? IdType { get; set; }
 
         [MaxLength(20)]
-        [Required]
-        public string IdNumber { get; set; } = " ";
+        public string? IdNumber { get; set; }
 
-        [Required]
-        public Gender Gender { get; set; }
+        public Gender? Gender { get; set; }
 
-        [Required]
-        public DateOnly DateOfBirth { get; set; }
+        public DateOnly? DateOfBirth { get; set; }
 
         [MaxLength(100)]
-        public string EmergencyContactName { get; set; } = " ";
+        public string? EmergencyContactName { get; set; }
 
         [MaxLength(20)]
-        public string EmergencyContactPhone { get; set; } = " ";
+        public string? EmergencyContactPhone { get; set; }
 
-        public Nationality Nationality { get; set; }
+        public Nationality? Nationality { get; set; }
 
         public string? Address { get; set; }
-
-        public User User { get; set; } = new User();
     }
 }

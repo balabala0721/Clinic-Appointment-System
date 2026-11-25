@@ -19,6 +19,51 @@
                         <span asp-validation-for="FullName" class="text-danger small"></span>
                     </div>
 
+                    <div class="col-md-4">
+                        <label asp-for="IdType" class="form-label"></label>
+                        <select asp-for="IdType" class="form-select">
+                            @foreach (var idType in Enum.GetValues<IdType>())
+                            {
+                                <option value="@idType">@idType</option>
+                            }
+                        </select>
+                        <span asp-validation-for="IdType" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-8">
+                        <label asp-for="IdNumber" class="form-label"></label>
+                        <input asp-for="IdNumber" class="form-control" />
+                        <span asp-validation-for="IdNumber" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Nationality" class="form-label"></label>
+                        <select asp-for="Nationality" class="form-select">
+                            @foreach (var nationality in Enum.GetValues<Nationality>())
+                            {
+                                <option value="@nationality">@nationality</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Nationality" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Gender" class="form-label"></label>
+                        <select asp-for="Gender" class="form-select">
+                            @foreach (var gender in Enum.GetValues<Gender>())
+                            {
+                                <option value="@gender">@gender</option>
+                            }
+                        </select>
+                        <span asp-validation-for="Gender" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="DateOfBirth" class="form-label"></label>
+                        <input asp-for="DateOfBirth" type="date" class="form-control" />
+                        <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                    </div>
+
                     <div class="col-md-12">
                         <label asp-for="Email" class="form-label"></label>
                         <input asp-for="Email" class="form-control" />
@@ -40,7 +85,11 @@
             </div>
         </div>
 
-        <p class="text-center mb-0">Already have an account?<a asp-controller="Acc" asp-action="Login">Log in</a></p>
+        <div class="d-grid mb-3">
+            <button type="submit" class="btn btn-primary btn-lg">Register</button>
+        </div>
+
+        <p class="text-center mb-0">Already have an account? <a asp-controller="Acc" asp-action="Login">Log in</a></p>
     </form>
 </div>
 
