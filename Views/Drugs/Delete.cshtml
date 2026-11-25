@@ -1,0 +1,47 @@
+﻿@model ClinicSystem.Models.Entities.Drug
+
+@{
+    ViewData["Title"] = "Delete Drug";
+}
+
+<div class="container mt-4">
+    <h2>Delete Drug</h2>
+
+    <div class="alert alert-danger">
+        Are you sure you want to permanently delete this drug?
+        This action cannot be undone.
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Drug ID</dt>
+                <dd class="col-sm-9">@Model.DrugID</dd>
+
+                <dt class="col-sm-3">Drug Name</dt>
+                <dd class="col-sm-9">@Model.DrugName</dd>
+
+                <dt class="col-sm-3">Category</dt>
+                <dd class="col-sm-9">@Model.DrugCategory</dd>
+
+                <dt class="col-sm-3">Unit Price</dt>
+                <dd class="col-sm-9">RM @Model.UnitPrice.ToString("F2")</dd>
+
+                <dt class="col-sm-3">Stock Quantity</dt>
+                <dd class="col-sm-9">@Model.StockQuantity</dd>
+            </dl>
+
+            <form asp-action="Delete" method="post">
+                <input type="hidden" asp-for="DrugID" />
+
+                <button type="submit" class="btn btn-danger">
+                    Confirm Delete
+                </button>
+
+                <a asp-action="Index" class="btn btn-secondary">
+                    Cancel
+                </a>
+            </form>
+        </div>
+    </div>
+</div>

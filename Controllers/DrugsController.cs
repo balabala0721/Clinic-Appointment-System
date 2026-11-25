@@ -396,5 +396,52 @@ public class DrugsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // GET: Drugs/Delete/DRG0000001
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(string id)
+    {
+        if (string.IsNullOrEmpty(id))
+            return NotFound();
+
+        var drug = await db.Drugs
+            .FirstOrDefaultAsync(d => d.DrugID == id);
+
+        if (drug == null)
+            return NotFound();
+
+        return View(drug);
+    }
+
+    // POST: Drugs/Delete/DRG0000001
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteConfirmed(string id)
+    {
+        var drug = await db.Drugs
+            .Include(d => d.Prescriptions)
+            .FirstOrDefaultAsync(d => d.DrugID == id);
+
+        if (drug == null)
+            return NotFound();
+
+        // Prevent deleting drugs that have prescription records
+        if (drug.Prescriptions.Any())
+        {
+            TempData["ErrorMessage"] =
+                "This drug cannot be deleted because it has prescription records. Please deactivate it instead.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        db.Drugs.Remove(drug);
+
+        await db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Drug deleted successfully!";
+
+        return RedirectToAction(nameof(Index));
+    }
+
 
 }
