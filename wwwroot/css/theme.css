@@ -115,7 +115,7 @@
     /* Layout */
     --sidebar-width:  248px;
     --topbar-height:  56px;
-    --content-max:    1140px;
+    --content-max:    1320px;    /* page width next to the sidebar; content starts at the sidebar edge */
     --width-narrow:   46rem;     /* single-column pages (find a doctor) */
     --width-dialog:   34rem;     /* centred cards (login, errors) */
     --width-field:    16rem;     /* short inputs (dates, numbers) */
@@ -396,8 +396,8 @@ a:hover { color: var(--color-primary-hover); }
 .app-content {
     width: 100%;
     max-width: var(--content-max);
-    margin: 0 auto;
-    padding: var(--space-6) var(--space-5) var(--space-7);
+    margin: 0;                  /* left-aligned next to the sidebar (no gap on wide screens) */
+    padding: var(--space-6) var(--space-6) var(--space-7);
 }
 
 /* Pages without a signed-in user (login, register): centred, no sidebar */
