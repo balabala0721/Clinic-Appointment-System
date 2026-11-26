@@ -128,7 +128,7 @@ public class DrugsController : Controller
 
 
             default:
-                query = query.OrderBy(d => d.DrugName);
+                query = query.OrderBy(d => d.DrugID);
                 break;
         }
 
