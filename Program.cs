@@ -80,6 +80,18 @@ if (app.Environment.IsDevelopment())
         if (!db.Database.GetMigrations().Any())
             throw new InvalidOperationException(
                 "No migrations found. In Package Manager Console run: Add-Migration InitialCreate");
+
+        // If the local DB was built from migrations that no longer exist in the code (e.g. after the
+        // team squashed migrations), it can't be upgraded in place. Rebuild the dev DB so it matches.
+        var known = db.Database.GetMigrations().ToHashSet();
+        var stale = (await db.Database.GetAppliedMigrationsAsync()).Where(m => !known.Contains(m)).ToList();
+        if (stale.Count > 0)
+        {
+            app.Logger.LogWarning("Local database has migrations not in the code ({Stale}). Recreating the development database.",
+                                  string.Join(", ", stale));
+            await db.Database.EnsureDeletedAsync();
+        }
+
         await db.Database.MigrateAsync();
         await DevDataSeeder.SeedAsync(db);      // TEMPORARY - remove with the test login
     }

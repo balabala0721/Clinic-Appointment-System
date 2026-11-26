@@ -16,7 +16,7 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261125100557_AddDrugIsActive";
+    public override string LastMigrationId => "20261126033105_InitialCreate";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
@@ -54,9 +54,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                 b.Property<int>("UserId")
                     .HasColumnType("int");
 
-                b.Property<int>("UserId1")
-                    .HasColumnType("int");
-
                 b.Property<int>("YearsOfExperience")
                     .HasColumnType("int");
 
@@ -66,8 +63,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
 
                 b.HasIndex("UserId")
                     .IsUnique();
-
-                b.HasIndex("UserId1");
 
                 b.ToTable("Doctors");
             });
@@ -115,31 +110,6 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                 b.HasIndex("EmergencyContactPhone")
                     .IsUnique()
                     .HasFilter("[EmergencyContactPhone] IS NOT NULL");
-
-                        b1.Property<string>("PhoneNo")
-                            .IsRequired()
-                            .HasMaxLength(20)
-                            .HasColumnType("nvarchar(20)");
-
-                        b1.Property<string>("PhotoUrl")
-                            .IsRequired()
-                            .HasColumnType("nvarchar(max)");
-
-                        b1.Property<string>("Role")
-                            .IsRequired()
-                            .HasColumnType("nvarchar(max)");
-
-                        b1.Property<int>("UserId")
-                            .HasMaxLength(11)
-                            .HasColumnType("int");
-
-                        b1.Property<string>("Username")
-                            .IsRequired()
-                            .HasMaxLength(30)
-                            .HasColumnType("nvarchar(30)");
-                    });
-
-                b.HasKey("PatientId");
 
                 b.HasIndex("IdNumber")
                     .IsUnique()
@@ -1070,15 +1040,9 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
                     .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired();
 
-                b.HasOne("ClinicSystem.Models.Account.User", null)
-                    .WithMany()
-                    .HasForeignKey("UserId")
-                    .OnDelete(DeleteBehavior.Restrict)
-                    .IsRequired();
-
                 b.HasOne("ClinicSystem.Models.Account.User", "User")
-                    .WithMany()
-                    .HasForeignKey("UserId1")
+                    .WithOne()
+                    .HasForeignKey("ClinicSystem.Models.Account.Doctor", "UserId")
                     .OnDelete(DeleteBehavior.Restrict)
                     .IsRequired();
 

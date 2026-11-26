@@ -95,7 +95,7 @@ public class ClinicDbContext : DbContext
         modelBuilder.Entity<Doctor>(e =>
         {
             e.ToTable("Doctors");
-            e.HasOne<User>().WithMany().HasForeignKey(d => d.UserId);
+            e.HasOne(d => d.User).WithOne().HasForeignKey<Doctor>(d => d.UserId);
             e.HasIndex(d => d.UserId).IsUnique();
             e.HasOne(d => d.Specialisation).WithMany().HasForeignKey(d => d.SpecialisationId);
         });
