@@ -6,6 +6,7 @@
 //   Clinic.busy($btn, true|false)       loading state: spinner + disabled
 //   Clinic.toast(message, ok)           small notice, top-right (bottom on phones)
 //   Clinic.inline($el, message, ok)     message right next to the control that failed
+//   Clinic.toastAfterReload(message)    toast that appears after location.reload()
 //   Clinic.confirm({...})               confirmation modal -> promise (never confirm())
 //   Clinic.loadSlots(...)               time chips grouped Morning / Afternoon / Evening
 //   Clinic.fmtTime('14:30')             "2:30 PM"  (same format as Ui.Time in C#)
@@ -76,6 +77,11 @@ const Clinic = {
         const t = new bootstrap.Toast($toast[0], { delay: ok ? 4000 : 7000 });
         $toast.on('hidden.bs.toast', function () { $toast.remove(); });
         t.show();
+    },
+
+    // Toast shown on the next page load (for actions that reload the page)
+    toastAfterReload(message) {
+        try { sessionStorage.setItem('clinic:toast', message); } catch (e) { /* storage blocked - skip */ }
     },
 
     // Message under/next to a control. $el is an element with class "inline-msg".
@@ -253,6 +259,11 @@ $(function () {
     $(window).on('pageshow', function () {
         $('.btn.is-busy').each(function () { Clinic.busy($(this), false); });
     });
+
+    try {
+        const pending = sessionStorage.getItem('clinic:toast');
+        if (pending) { sessionStorage.removeItem('clinic:toast'); Clinic.toast(pending, true); }
+    } catch (e) { /* storage blocked */ }
 
     // Server messages after a redirect (TempData) also appear as toasts
     $('[data-toast]').each(function () {

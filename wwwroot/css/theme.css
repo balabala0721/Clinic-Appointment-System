@@ -111,6 +111,9 @@
     --sidebar-width:  248px;
     --topbar-height:  56px;
     --content-max:    1140px;
+    --width-narrow:   46rem;     /* single-column pages (find a doctor) */
+    --width-dialog:   34rem;     /* centred cards (login, errors) */
+    --width-field:    16rem;     /* short inputs (dates, numbers) */
     --tap-size:       44px;      /* minimum touch target */
     --chat-clearance: 96px;      /* space kept free at the bottom for the chat button */
 
@@ -243,6 +246,9 @@ a:hover { color: var(--color-primary-hover); }
 
 .visually-hidden-focusable:not(:focus):not(:focus-within) { position: absolute !important; }
 .min-w-0 { min-width: 0; }
+.narrow-page { max-width: var(--width-narrow); margin-inline: auto; }
+.dialog-card { max-width: var(--width-dialog); margin-inline: auto; }
+.field-narrow { max-width: var(--width-field); }
 
 
 /* -----------------------------------------------------------------------------

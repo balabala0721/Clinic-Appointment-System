@@ -78,3 +78,6 @@ public static class Ui
         return string.Concat(parts.Take(2).Select(p => char.ToUpperInvariant(p[0])));
     }
 }
+
+/// <summary>Model for Views/Shared/_Pager.cshtml (Previous / Next links that keep the current filters).</summary>
+public record PagerModel(int Page, bool HasNext);

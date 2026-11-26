@@ -1,0 +1,27 @@
+@model PagerModel
+@* Previous / Next links. Keeps every current query-string filter and only changes ?page=. *@
+@{
+    string UrlFor(int page)
+    {
+        var q = Context.Request.Query.Where(kv => !string.Equals(kv.Key, "page", StringComparison.OrdinalIgnoreCase))
+                                     .Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value.ToString())}")
+                                     .Append($"page={page}");
+        return Context.Request.Path + "?" + string.Join("&", q);
+    }
+}
+@if (Model.Page > 1 || Model.HasNext)
+{
+    <nav class="pager card-table-footer" aria-label="Pages">
+        @if (Model.Page > 1)
+        {
+            <a class="btn btn-secondary btn-sm" href="@UrlFor(Model.Page - 1)"><i class="bi bi-chevron-left" aria-hidden="true"></i> Previous</a>
+        }
+        else { <span></span> }
+        <span>Page @Model.Page</span>
+        @if (Model.HasNext)
+        {
+            <a class="btn btn-secondary btn-sm" href="@UrlFor(Model.Page + 1)">Next <i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+        }
+        else { <span></span> }
+    </nav>
+}

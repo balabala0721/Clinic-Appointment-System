@@ -1,58 +1,162 @@
 @model BookPageViewModel
+@*
+    Step-by-step booking: 1 specialisation -> 2 doctor -> 3 date -> 4 time -> 5 confirm -> done.
+    All steps are on this page; wwwroot/js/booking.js shows one panel at a time.
+    JS hooks: [data-step] panels, #stepper, input[name=spec], input[name=doctor] (data-spec, data-name,
+    data-spec-name, data-fee), #date, .js-day, #slots, #reason, #book-btn, #book-msg, #doctor-schedule-link,
+    [data-go], [data-next], #summary-*, #done-*.
+*@
 @{
     ViewData["Title"] = "Book an appointment";
+    var today = ClinicClock.Today;
+    var maxDate = DateOnly.Parse(Model.MaxDate);
+    var steps = new[] { "Specialisation", "Doctor", "Date", "Time", "Confirm" };
 }
 
-<div class="row justify-content-center">
-    <div class="col-lg-7">
-        <div class="card-clean">
-            <h1 class="h4 mb-3">Book an appointment</h1>
-
-            <div class="mb-3">
-                <label class="form-label" for="specialisation">Specialisation</label>
-                <select id="specialisation" class="form-select">
-                    <option value="">All</option>
-                    @foreach (var s in Model.Specialisations)
-                    {
-                        <option value="@s.SpecialisationId">@s.Name</option>
-                    }
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label" for="doctor">Doctor</label>
-                <select id="doctor" class="form-select">
-                    <option value="">Choose a doctor</option>
-                    @foreach (var d in Model.Doctors)
-                    {
-                        <option value="@d.DoctorId" data-spec="@d.SpecialisationId"
-                                selected="@(d.DoctorId == Model.PreselectedDoctorId)">
-                            @d.User.FullName (@d.Specialisation?.Name)
-                        </option>
-                    }
-                </select>
-                <a id="doctor-schedule-link" class="small d-none" href="#">View weekly schedule</a>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label" for="date">Date</label>
-                <input id="date" type="date" class="form-control" min="@Model.MinDate" max="@Model.MaxDate" value="@Model.PreselectedDate" />
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Available times</label>
-                <div id="slots" class="slot-grid"></div>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label" for="reason">Reason for visit <span class="text-muted">(optional)</span></label>
-                <textarea id="reason" class="form-control" rows="2" maxlength="300"></textarea>
-            </div>
-
-            <button id="book-btn" class="btn btn-primary" disabled>Book appointment</button>
-        </div>
+<div class="page-header">
+    <div>
+        <h1>Book an appointment</h1>
+        <p class="page-subtitle">Five quick steps. You can go back at any time.</p>
     </div>
+</div>
 
+<ol class="stepper" id="stepper" aria-label="Booking progress">
+    @for (var i = 0; i < steps.Length; i++)
+    {
+        <li data-step-indicator="@(i + 1)"><span class="step-name">@(i + 1). @steps[i]</span></li>
+    }
+</ol>
+
+<div class="card-clean" id="booking"
+     data-preselected-doctor="@Model.PreselectedDoctorId" data-preselected-date="@Model.PreselectedDate">
+
+    @* ---------------------------------------------------------------- 1. Specialisation *@
+    <section data-step="1" aria-labelledby="s1-title">
+        <h2 class="step-title" id="s1-title" tabindex="-1">What kind of doctor do you need?</h2>
+        <p class="step-hint">Not sure? Choose "Any doctor", or <a asp-controller="DoctorRecommendation" asp-action="Index">describe your symptoms</a> for a suggestion.</p>
+        <div class="choice-grid" role="radiogroup" aria-labelledby="s1-title">
+            <label class="choice">
+                <input type="radio" name="spec" value="" data-name="Any doctor" />
+                <i class="bi bi-people fs-4 text-muted" aria-hidden="true"></i>
+                <span><span class="choice-title d-block">Any doctor</span><span class="choice-sub">See everyone available</span></span>
+            </label>
+            @foreach (var s in Model.Specialisations)
+            {
+                var count = Model.Doctors.Count(d => d.SpecialisationId == s.SpecialisationId);
+                <label class="choice">
+                    <input type="radio" name="spec" value="@s.SpecialisationId" data-name="@s.Name" />
+                    <i class="bi bi-heart-pulse fs-4 text-muted" aria-hidden="true"></i>
+                    <span><span class="choice-title d-block">@s.Name</span><span class="choice-sub">@count @(count == 1 ? "doctor" : "doctors")</span></span>
+                </label>
+            }
+        </div>
+        <div class="step-nav">
+            <span></span>
+            <button type="button" class="btn btn-primary" data-next="2" disabled>Continue <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+        </div>
+    </section>
+
+    @* ---------------------------------------------------------------- 2. Doctor *@
+    <section data-step="2" aria-labelledby="s2-title" hidden>
+        <h2 class="step-title" id="s2-title" tabindex="-1">Choose a doctor</h2>
+        <p class="step-hint">Consultation fee shown on the right.</p>
+        <div class="choice-grid" role="radiogroup" aria-labelledby="s2-title">
+            @foreach (var d in Model.Doctors)
+            {
+                <label class="choice">
+                    <input type="radio" name="doctor" value="@d.DoctorId" data-spec="@d.SpecialisationId"
+                           data-name="@d.User.FullName" data-spec-name="@d.Specialisation?.Name" data-fee="@Ui.Money(d.ConsultationFee)" />
+                    <span class="avatar" aria-hidden="true">@Ui.Initials(d.User.FullName)</span>
+                    <span class="min-w-0"><span class="choice-title d-block">@d.User.FullName</span><span class="choice-sub">@d.Specialisation?.Name</span></span>
+                    <span class="choice-end">@Ui.Money(d.ConsultationFee)</span>
+                </label>
+            }
+        </div>
+        <div class="step-nav">
+            <button type="button" class="btn btn-secondary" data-go="1"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back</button>
+            <button type="button" class="btn btn-primary" data-next="3" disabled>Continue <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+        </div>
+    </section>
+
+    @* ---------------------------------------------------------------- 3. Date *@
+    <section data-step="3" aria-labelledby="s3-title" hidden>
+        <h2 class="step-title" id="s3-title" tabindex="-1">Pick a date</h2>
+        <p class="step-hint">
+            With <strong class="js-doctor-name"></strong>.
+            <a id="doctor-schedule-link" class="d-none" href="#">See this doctor's weekly hours</a>
+        </p>
+        <div class="slot-chips mb-3" role="group" aria-label="Next 7 days">
+            @for (var i = 0; i < 7; i++)
+            {
+                var d = today.AddDays(i);
+                if (d > maxDate) { break; }
+                var label = i == 0 ? "Today" : i == 1 ? "Tomorrow" : d.ToString("ddd d");
+                <button type="button" class="slot-chip js-day" data-date="@d.ToString("yyyy-MM-dd")" aria-pressed="false">@label</button>
+            }
+        </div>
+        <label class="form-label" for="date">Or choose another date</label>
+        <input id="date" type="date" class="form-control field-narrow"
+               min="@Model.MinDate" max="@Model.MaxDate" value="@Model.PreselectedDate" />
+        <div class="form-text">You can book up to @ClinicSettings.MaxBookingDaysAhead days ahead.</div>
+        <div class="step-nav">
+            <button type="button" class="btn btn-secondary" data-go="2"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back</button>
+            <button type="button" class="btn btn-primary" data-next="4">See times <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+        </div>
+    </section>
+
+    @* ---------------------------------------------------------------- 4. Time *@
+    <section data-step="4" aria-labelledby="s4-title" hidden>
+        <h2 class="step-title" id="s4-title" tabindex="-1">Choose a time</h2>
+        <p class="step-hint"><span class="js-doctor-name"></span> &middot; <span class="js-date-label"></span></p>
+        <div id="slots" class="slot-grid" aria-live="polite"></div>
+        <div class="step-nav">
+            <button type="button" class="btn btn-secondary" data-go="3"><i class="bi bi-arrow-left" aria-hidden="true"></i> Change date</button>
+            <button type="button" class="btn btn-primary" data-next="5" disabled>Continue <i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+        </div>
+    </section>
+
+    @* ---------------------------------------------------------------- 5. Confirm *@
+    <section data-step="5" aria-labelledby="s5-title" hidden>
+        <h2 class="step-title" id="s5-title" tabindex="-1">Check and confirm</h2>
+        <p class="step-hint">Nothing is booked until you press "Confirm booking".</p>
+        <dl class="summary-list mb-4">
+            <dt>Doctor</dt><dd id="summary-doctor"></dd>
+            <dt>Specialisation</dt><dd id="summary-spec"></dd>
+            <dt>Date</dt><dd id="summary-date"></dd>
+            <dt>Time</dt><dd id="summary-time"></dd>
+            <dt>Consultation fee</dt><dd id="summary-fee"></dd>
+        </dl>
+        <label class="form-label" for="reason">Reason for visit <span class="optional">(optional)</span></label>
+        <textarea id="reason" class="form-control" rows="2" maxlength="300"
+                  placeholder="e.g. Fever and sore throat since Monday"></textarea>
+        <div class="form-text">Helps the doctor prepare. Up to 300 characters.</div>
+        <p class="small text-muted mt-3 mb-0">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            You can reschedule or cancel up to @ClinicSettings.MinCancelHoursBefore hours before the appointment.
+        </p>
+        <div id="book-msg" class="inline-msg" aria-live="assertive"></div>
+        <div class="step-nav">
+            <button type="button" class="btn btn-secondary" data-go="4"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back</button>
+            <button type="button" id="book-btn" class="btn btn-primary" data-busy-text="Booking...">
+                <i class="bi bi-check2" aria-hidden="true"></i> Confirm booking
+            </button>
+        </div>
+    </section>
+
+    @* ---------------------------------------------------------------- Done *@
+    <section data-step="6" aria-labelledby="done-title" class="text-center py-3" hidden>
+        <div class="success-mark" aria-hidden="true"><i class="bi bi-check-lg"></i></div>
+        <h2 class="step-title" id="done-title" tabindex="-1">Appointment booked</h2>
+        <p class="text-muted" id="done-message"></p>
+        <dl class="summary-list d-inline-grid text-start mb-4">
+            <dt>Doctor</dt><dd id="done-doctor"></dd>
+            <dt>When</dt><dd id="done-when"></dd>
+        </dl>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a class="btn btn-primary" asp-action="My">View my appointments</a>
+            <button type="button" class="btn btn-secondary" data-restart>Book another</button>
+        </div>
+    </section>
 </div>
 
 @section Scripts {

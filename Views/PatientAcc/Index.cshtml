@@ -1,7 +1,167 @@
-﻿@{
-    ViewData["Title"] = "Patient Dashboard";
-    Layout = "_Layout"; // Optional if already set in _ViewStart.cshtml
+﻿@*
+    Patient dashboard (landing page after login).
+    Read-only: data comes from the existing services plus one small invoice query.
+*@
+@using Microsoft.EntityFrameworkCore
+@inject CurrentUserService Me
+@inject AppointmentService Appointments
+@inject ClinicSystem.Data.ClinicDbContext Db
+@{
+    ViewData["Title"] = "Home";
+    var patientId = await Me.GetPatientIdAsync();
+    var now = ClinicClock.Now;
+
+    var upcoming = new List<Appointment>();
+    var bills = new List<Invoice>();
+    if (patientId != null)
+    {
+        upcoming = (await Appointments.GetPatientAppointmentsAsync(patientId.Value))
+                   .Where(a => a.StartsAt >= now && AppointmentStatus.Changeable.Contains(a.Status))
+                   .OrderBy(a => a.StartsAt).ToList();
+        bills = await Db.Invoices.AsNoTracking()
+                   .Where(i => i.PatientId == patientId.Value && !i.IsDeleted)
+                   .OrderByDescending(i => i.IssuedAt).Take(3).ToListAsync();
+    }
+    var next = upcoming.FirstOrDefault();
+    var later = upcoming.Skip(1).Take(3).ToList();
+    var firstName = (User.Identity?.Name ?? "").Split(' ').FirstOrDefault();
 }
 
-<h1>Welcome, Patient</h1>
-<p>Your account dashboard content goes here.</p>
+<div class="page-header">
+    <div>
+        <h1>Hello, @firstName</h1>
+        <p class="page-subtitle">@Ui.DayDate(ClinicClock.Today)</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary btn-lg" asp-controller="Appointments" asp-action="Book">
+            <i class="bi bi-calendar-plus" aria-hidden="true"></i> Book appointment
+        </a>
+    </div>
+</div>
+
+@if (patientId == null)
+{
+    <div class="alert alert-warning" role="alert">
+        <i class="bi bi-person-exclamation" aria-hidden="true"></i>
+        <div>Your patient profile isn't set up yet, so appointments can't be shown. Please contact the clinic at @ClinicInfo.Phone.</div>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        @* ---- Next appointment ---- *@
+        <section aria-labelledby="next-title" class="mb-4">
+            <h2 class="section-title" id="next-title">Next appointment</h2>
+            @if (next == null)
+            {
+                <div class="card-clean">
+                    <div class="empty-state is-compact">
+                        <div class="empty-icon" aria-hidden="true"><i class="bi bi-calendar"></i></div>
+                        <div class="empty-title">No upcoming appointments</div>
+                        <p class="empty-text">Book a time with a doctor - it only takes a minute.</p>
+                        <a class="btn btn-outline-primary" asp-controller="Appointments" asp-action="Book">Book appointment</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card-clean card-feature d-flex flex-wrap gap-4 align-items-center">
+                    <div class="date-badge">
+                        <div class="dow">@next.AppointmentDate.ToString("ddd")</div>
+                        <div class="day">@next.AppointmentDate.Day</div>
+                        <div class="mon">@next.AppointmentDate.ToString("MMM")</div>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-semibold fs-5">@Ui.Time(next.StartTime)</div>
+                        <div>@next.Doctor?.User.FullName</div>
+                        <div class="text-muted small">@next.Doctor?.Specialisation?.Name &middot; @Ui.Date(next.AppointmentDate)</div>
+                    </div>
+                    <div class="d-flex flex-column align-items-start gap-2">
+                        @Ui.StatusBadge(next.Status)
+                        <a class="btn btn-secondary btn-sm" asp-controller="Appointments" asp-action="My">Reschedule or cancel</a>
+                    </div>
+                </div>
+                <p class="text-muted small mt-2 mb-0">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    Please arrive 10 minutes early. Changes are possible up to @ClinicSettings.MinCancelHoursBefore hours before.
+                </p>
+            }
+        </section>
+
+        @* ---- Other upcoming ---- *@
+        <section aria-labelledby="upcoming-title">
+            <div class="d-flex justify-content-between align-items-baseline">
+                <h2 class="section-title" id="upcoming-title">Also coming up</h2>
+                <a class="small" asp-controller="Appointments" asp-action="My">All appointments</a>
+            </div>
+            <div class="card-clean">
+                @if (later.Count == 0)
+                {
+                    <p class="text-muted mb-0">Nothing else booked.</p>
+                }
+                else
+                {
+                    <div class="appt-list">
+                        @foreach (var a in later)
+                        {
+                            <div class="appt-row">
+                                <div class="appt-head">
+                                    <div>
+                                        <div class="appt-when">@Ui.DayDate(a.AppointmentDate) &middot; @Ui.Time(a.StartTime)</div>
+                                        <div class="appt-who">@a.Doctor?.User.FullName &middot; @a.Doctor?.Specialisation?.Name</div>
+                                    </div>
+                                    @Ui.StatusBadge(a.Status)
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
+
+    <div class="col-lg-5">
+        @* ---- Recent bills ---- *@
+        <section aria-labelledby="bills-title" class="mb-4">
+            <h2 class="section-title" id="bills-title">Recent bills</h2>
+            <div class="card-clean">
+                @if (bills.Count == 0)
+                {
+                    <div class="empty-state is-compact">
+                        <div class="empty-icon" aria-hidden="true"><i class="bi bi-receipt"></i></div>
+                        <div class="empty-title">No bills yet</div>
+                        <p class="empty-text mb-0">Bills appear here after your consultation.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="appt-list">
+                        @foreach (var b in bills)
+                        {
+                            <div class="appt-row">
+                                <div class="appt-head">
+                                    <div>
+                                        <div class="appt-when">@Ui.Money(b.TotalAmount)</div>
+                                        <div class="appt-who">@b.InvoiceNo &middot; @Ui.Date(ClinicClock.FromUtc(b.IssuedAt))</div>
+                                    </div>
+                                    @Ui.StatusBadge(b.Status)
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+
+        @* ---- Help ---- *@
+        <section aria-labelledby="help-title">
+            <h2 class="section-title" id="help-title">Not sure who to see?</h2>
+            <div class="card-clean">
+                <p class="text-muted">Describe your symptoms and we'll suggest the right kind of doctor and the earliest times.</p>
+                <a class="btn btn-secondary" asp-controller="DoctorRecommendation" asp-action="Index">
+                    <i class="bi bi-search" aria-hidden="true"></i> Find a doctor
+                </a>
+            </div>
+        </section>
+    </div>
+</div>

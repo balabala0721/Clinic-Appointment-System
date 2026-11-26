@@ -3,49 +3,60 @@
     ViewData["Title"] = "My appointments";
     var returnUrl = Context.Request.Path + Context.Request.QueryString;
     var today = ClinicClock.Today;
+    var heading = Model.AllDates ? "All dates" : Model.Date.HasValue ? Ui.DayDate(Model.Date.Value) : "";
 }
 
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h1 class="h4 mb-0">My appointments</h1>
-    <a asp-controller="DoctorSchedules" asp-action="Mine" class="btn btn-outline-secondary btn-sm">Weekly schedule &amp; leave</a>
+<div class="page-header">
+    <div>
+        <h1>Appointments</h1>
+        <p class="page-subtitle">@heading@(string.IsNullOrEmpty(Model.Status) ? "" : " · " + Ui.StatusLabel(Model.Status))</p>
+    </div>
+    <div class="page-actions">
+        <a asp-controller="DoctorSchedules" asp-action="Mine" class="btn btn-secondary"><i class="bi bi-calendar-week" aria-hidden="true"></i> Schedule &amp; leave</a>
+    </div>
 </div>
 
-<form method="get" class="card-clean row g-2 align-items-end mb-4">
-    <div class="col-md-4">
-        <label class="form-label small">Date</label>
-        <input type="date" name="date" value="@Model.Date?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+<form method="get" class="card-clean filter-bar" role="search" aria-label="Filter appointments">
+    <div class="filter-field">
+        <label class="form-label" for="f-date">Date</label>
+        <input id="f-date" type="date" name="date" value="@Model.Date?.ToString("yyyy-MM-dd")" class="form-control" />
     </div>
-    <div class="col-md-3">
-        <label class="form-label small">Status</label>
-        <select name="status" class="form-select form-select-sm">
-            <option value="">All</option>
+    <div class="filter-field">
+        <label class="form-label" for="f-status">Status</label>
+        <select id="f-status" name="status" class="form-select">
+            <option value="">All statuses</option>
             @foreach (var s in AppointmentStatus.All)
             {
-                <option value="@s" selected="@(s == Model.Status)">@s</option>
+                <option value="@s" selected="@(s == Model.Status)">@Ui.StatusLabel(s)</option>
             }
         </select>
     </div>
-    <div class="col-md-3 form-check ms-2 mb-1">
-        <input class="form-check-input" type="checkbox" name="allDates" value="true" id="allDates" checked="@Model.AllDates" />
-        <label class="form-check-label small" for="allDates">All dates</label>
+    <div class="filter-field">
+        <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" name="allDates" value="true" id="allDates" checked="@Model.AllDates" />
+            <label class="form-check-label" for="allDates">Show all dates</label>
+        </div>
     </div>
-    <div class="col-md-1"><button class="btn btn-primary btn-sm w-100">Filter</button></div>
+    <div class="filter-actions">
+        <button class="btn btn-primary">Apply</button>
+        <a class="btn btn-secondary" asp-action="Doctor">Today</a>
+    </div>
 </form>
 
-<div class="card-clean">
-    <p class="small text-muted mb-3">
-        @(Model.AllDates ? "All dates" : Model.Date?.ToString("dddd, d MMMM yyyy"))
-        @(string.IsNullOrEmpty(Model.Status) ? "" : " - " + Model.Status)
-    </p>
-
+<div class="card-clean @(Model.Appointments.Count > 0 ? "card-table" : "")">
     @if (Model.Appointments.Count == 0)
     {
-        <p class="text-muted mb-0">No appointments.</p>
+        <div class="empty-state">
+            <div class="empty-icon" aria-hidden="true"><i class="bi bi-calendar"></i></div>
+            <div class="empty-title">No appointments match</div>
+            <p class="empty-text">Try another date, or show all dates.</p>
+            <a class="btn btn-outline-primary" asp-action="Doctor" asp-route-allDates="true">Show all dates</a>
+        </div>
     }
     else
     {
-        <table class="table table-sm align-middle mb-0">
-            <thead><tr><th>Date</th><th>Time</th><th>Patient</th><th>Reason for visit</th><th>Status</th><th></th></tr></thead>
+        <table class="table table-stack">
+            <thead><tr><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Patient</th><th scope="col">Reason for visit</th><th scope="col">Status</th><th scope="col" class="actions"><span class="visually-hidden">Actions</span></th></tr></thead>
             <tbody>
                 @foreach (var a in Model.Appointments)
                 {
@@ -53,24 +64,31 @@
                     var next = AppointmentStatus.NextFor(a.Status, isDoctor: true)
                                    .Where(s => !AppointmentStatus.OutcomeStatuses.Contains(s) || a.AppointmentDate <= today)
                                    .ToList();
+                    var patient = a.Patient?.User.FullName ?? "Patient";
                     <tr>
-                        <td>@a.AppointmentDate.ToString("d MMM")</td>
-                        <td>@a.StartTime.ToString("HH:mm")</td>
-                        <td>@a.Patient?.User.FullName</td>
-                        <td class="small">@(a.ReasonForVisit ?? "-")</td>
-                        <td>@a.Status</td>
-                        <td class="text-end">
+                        <td data-label="Date">@Ui.Date(a.AppointmentDate)</td>
+                        <td data-label="Time">@Ui.Time(a.StartTime)</td>
+                        <td data-label="Patient">@patient</td>
+                        <td data-label="Reason" class="small">@(a.ReasonForVisit ?? "-")</td>
+                        <td data-label="Status">@Ui.StatusBadge(a.Status)</td>
+                        <td class="actions">
                             @if (next.Count > 0)
                             {
-                                <form asp-action="UpdateStatus" method="post" class="d-inline-flex gap-1">
+                                <form asp-action="UpdateStatus" method="post" class="d-inline-flex gap-2 m-0">
                                     <input type="hidden" name="id" value="@a.AppointmentId" />
                                     <input type="hidden" name="returnUrl" value="@returnUrl" />
                                     @foreach (var s in next)
                                     {
-                                        <button name="status" value="@s"
-                                                class="btn btn-sm @(s == AppointmentStatus.Completed ? "btn-outline-success" : "btn-outline-secondary")">
-                                            @(s == AppointmentStatus.NoShow ? "No-show" : s)
-                                        </button>
+                                        if (s == AppointmentStatus.NoShow)
+                                        {
+                                            <button name="status" value="@s" class="btn btn-outline-danger btn-sm"
+                                                    data-confirm="@patient will be marked as not attending the appointment on @Ui.Date(a.AppointmentDate) at @Ui.Time(a.StartTime). This can't be undone."
+                                                    data-confirm-title="Mark as no-show?" data-confirm-ok="Mark no-show">No-show</button>
+                                        }
+                                        else
+                                        {
+                                            <button name="status" value="@s" class="btn btn-primary btn-sm">@Ui.StatusLabel(s)</button>
+                                        }
                                     }
                                 </form>
                             }
@@ -81,17 +99,5 @@
         </table>
     }
 
-    <div class="d-flex justify-content-between mt-3">
-        @if (Model.Page > 1)
-        {
-            <a class="btn btn-link btn-sm" asp-route-page="@(Model.Page - 1)" asp-route-date="@Model.Date?.ToString("yyyy-MM-dd")"
-               asp-route-status="@Model.Status" asp-route-allDates="@Model.AllDates">Previous</a>
-        }
-        else { <span></span> }
-        @if (Model.Appointments.Count == ClinicSettings.AdminPageSize)
-        {
-            <a class="btn btn-link btn-sm" asp-route-page="@(Model.Page + 1)" asp-route-date="@Model.Date?.ToString("yyyy-MM-dd")"
-               asp-route-status="@Model.Status" asp-route-allDates="@Model.AllDates">Next</a>
-        }
-    </div>
+    <partial name="_Pager" model="@(new PagerModel(Model.Page, Model.Appointments.Count == ClinicSettings.AdminPageSize))" />
 </div>

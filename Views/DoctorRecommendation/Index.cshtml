@@ -1,23 +1,37 @@
+@*
+    AI doctor recommendation. JS: wwwroot/js/recommendation.js
+    Hooks: #recommend-form, #symptoms, #recommend-btn, #recommend-result, #recommend-msg.
+*@
 @{
     ViewData["Title"] = "Find the right doctor";
 }
 
-<div class="card-clean mx-auto" style="max-width: 680px">
-    <h1 class="h4 mb-1">Find the right doctor</h1>
-    <p class="text-muted mb-3">Describe your symptoms and we'll suggest which kind of doctor to see, and who is available soonest.</p>
+<div class="narrow-page">
+    <div class="page-header">
+        <div>
+            <h1>Find the right doctor</h1>
+            <p class="page-subtitle">Describe your symptoms. We'll suggest which kind of doctor to see and who is free soonest.</p>
+        </div>
+    </div>
 
-    <form id="recommend-form">
-        <textarea id="symptoms" class="form-control mb-2" rows="3" maxlength="@AiSettings.MaxSymptomLength"
+    <form id="recommend-form" class="card-clean mb-4" novalidate>
+        <label class="form-label" for="symptoms">Your symptoms</label>
+        <textarea id="symptoms" class="form-control" rows="4" maxlength="@AiSettings.MaxSymptomLength" required minlength="3"
+                  aria-describedby="symptoms-help recommend-msg"
                   placeholder="e.g. Sore throat and fever for 3 days, my child is 5 years old"></textarea>
-        <div class="d-flex justify-content-between align-items-center">
-            <span class="text-muted small">Don't include your name or IC number.</span>
-            <button id="recommend-btn" class="btn btn-primary" type="submit">Get suggestion</button>
+        <div id="symptoms-help" class="form-text">Don't include your name or IC number.</div>
+        <div id="recommend-msg" class="inline-msg" aria-live="assertive"></div>
+        <div class="d-flex justify-content-end mt-3">
+            <button id="recommend-btn" class="btn btn-primary" type="submit" data-no-busy>
+                <i class="bi bi-stars" aria-hidden="true"></i> Get suggestion
+            </button>
         </div>
     </form>
 
-    <div id="recommend-result" class="mt-4"></div>
+    <div id="recommend-result" aria-live="polite"></div>
 
     <p class="text-muted small mt-4 mb-0">
+        <i class="bi bi-info-circle" aria-hidden="true"></i>
         This is not a diagnosis. In an emergency, call <strong>999</strong>.
     </p>
 </div>

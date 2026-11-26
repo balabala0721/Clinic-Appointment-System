@@ -1,2 +1,134 @@
-@{ ViewData["Title"] = "Dashboard"; }
-<div class="page-header"><h1>Dashboard</h1></div>
+@*
+    Staff front desk (landing page): today's appointments, search by patient name or phone,
+    quick check-in, and an alert when schedule conflicts exist.
+    Read-only queries here; check-in posts to Appointments/UpdateStatus (same rules as Manage).
+*@
+@using Microsoft.EntityFrameworkCore
+@inject ClinicSystem.Data.ClinicDbContext Db
+@inject ScheduleService Schedules
+@{
+    ViewData["Title"] = "Front desk";
+    var today = ClinicClock.Today;
+    var q = (Context.Request.Query["q"].ToString() ?? "").Trim();
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+
+    var query = Db.Appointments.AsNoTracking()
+        .Include(a => a.Patient)
+        .Include(a => a.Doctor).ThenInclude(d => d!.Specialisation)
+        .Where(a => a.AppointmentDate == today);
+    if (q.Length > 0)
+    {
+        query = query.Where(a => a.Patient!.User.FullName.Contains(q) || (a.Patient!.User.PhoneNo ?? "").Contains(q));
+    }
+    var appts = await query.OrderBy(a => a.StartTime).ToListAsync();
+
+    var allToday = q.Length == 0 ? appts
+                 : await Db.Appointments.AsNoTracking().Where(a => a.AppointmentDate == today).ToListAsync();
+    var arriving = allToday.Count(a => a.Status is AppointmentStatus.Pending or AppointmentStatus.Confirmed);
+    var waiting = allToday.Count(a => a.Status == AppointmentStatus.CheckedIn);
+    var seen = allToday.Count(a => a.Status == AppointmentStatus.Completed);
+    var conflicts = (await Schedules.GetConflictsAsync()).Count;
+}
+
+<div class="page-header">
+    <div>
+        <h1>Front desk</h1>
+        <p class="page-subtitle">@Ui.DayDate(today)</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-secondary" asp-controller="Appointments" asp-action="Manage" asp-route-date="@today.ToString("yyyy-MM-dd")">
+            <i class="bi bi-list-check" aria-hidden="true"></i> All appointments
+        </a>
+    </div>
+</div>
+
+@if (conflicts > 0)
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+        <div>
+            <strong>@conflicts booked @(conflicts == 1 ? "appointment no longer fits" : "appointments no longer fit") the doctors' schedules.</strong>
+            Contact the patients and reschedule.
+            <a asp-controller="DoctorSchedules" asp-action="Conflicts">Review conflicts</a>
+        </div>
+    </div>
+}
+
+<div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">Appointments today</div><div class="stat-value">@allToday.Count(a => !AppointmentStatus.ReleasesSlot.Contains(a.Status))</div></div>
+    <div class="stat-card"><div class="stat-label">Still to arrive</div><div class="stat-value">@arriving</div></div>
+    <div class="stat-card"><div class="stat-label">Checked in, waiting</div><div class="stat-value">@waiting</div></div>
+    <div class="stat-card"><div class="stat-label">Seen</div><div class="stat-value">@seen</div></div>
+</div>
+
+<form method="get" class="filter-bar" role="search" aria-label="Find a patient">
+    <div class="filter-field is-wide">
+        <label class="form-label" for="q">Find a patient</label>
+        <input id="q" name="q" value="@q" class="form-control" placeholder="Name or phone number" autocomplete="off" />
+    </div>
+    <div class="filter-actions">
+        <button class="btn btn-primary"><i class="bi bi-search" aria-hidden="true"></i> Search</button>
+        @if (q.Length > 0)
+        {
+            <a class="btn btn-secondary" asp-action="Index">Clear</a>
+        }
+    </div>
+</form>
+
+<div class="card-clean @(appts.Count > 0 ? "card-table" : "")">
+    @if (appts.Count == 0)
+    {
+        <div class="empty-state">
+            <div class="empty-icon" aria-hidden="true"><i class="bi @(q.Length > 0 ? "bi-search" : "bi-calendar")"></i></div>
+            @if (q.Length > 0)
+            {
+                <div class="empty-title">No appointment today for "@q"</div>
+                <p class="empty-text">Check the spelling, or search all dates on the appointments page.</p>
+                <a class="btn btn-outline-primary" asp-controller="Appointments" asp-action="Manage" asp-route-patientName="@q">Search all dates</a>
+            }
+            else
+            {
+                <div class="empty-title">No appointments today</div>
+                <p class="empty-text mb-0">New bookings for today appear here automatically.</p>
+            }
+        </div>
+    }
+    else
+    {
+        <table class="table table-stack">
+            <thead><tr><th scope="col">Time</th><th scope="col">Patient</th><th scope="col">Doctor</th><th scope="col">Status</th><th scope="col" class="actions"><span class="visually-hidden">Actions</span></th></tr></thead>
+            <tbody>
+                @foreach (var a in appts)
+                {
+                    var patient = a.Patient?.User.FullName ?? "Patient";
+                    <tr>
+                        <td data-label="Time"><strong>@Ui.Time(a.StartTime)</strong></td>
+                        <td data-label="Patient">@patient <span class="d-block small text-muted">@(a.Patient?.User.PhoneNo ?? "No phone")</span></td>
+                        <td data-label="Doctor">@a.Doctor?.User.FullName <span class="d-block small text-muted">@a.Doctor?.Specialisation?.Name</span></td>
+                        <td data-label="Status">@Ui.StatusBadge(a.Status)</td>
+                        <td class="actions">
+                            @if (a.Status is AppointmentStatus.Confirmed or AppointmentStatus.Pending)
+                            {
+                                <form asp-controller="Appointments" asp-action="UpdateStatus" method="post" class="d-inline-flex gap-2 m-0">
+                                    <input type="hidden" name="id" value="@a.AppointmentId" />
+                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    @if (a.Status == AppointmentStatus.Confirmed)
+                                    {
+                                        <button name="status" value="@AppointmentStatus.CheckedIn" class="btn btn-primary btn-sm" data-busy-text="Checking in..."
+                                                aria-label="Check in @patient">
+                                            <i class="bi bi-person-check" aria-hidden="true"></i> Check in
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button name="status" value="@AppointmentStatus.Confirmed" class="btn btn-secondary btn-sm" aria-label="Confirm appointment for @patient">Confirm</button>
+                                    }
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

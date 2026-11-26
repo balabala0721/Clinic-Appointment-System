@@ -34,8 +34,8 @@
                     <div class="sc-sub">AI support &middot; usually replies in seconds</div>
                 </div>
                 <div class="d-flex gap-1">
-                    <button id="sc-clear" class="sc-icon-btn" type="button" title="Start a new chat" aria-label="Start a new chat">&#8635;</button>
-                    <button id="sc-close" class="sc-icon-btn" type="button" title="Minimise" aria-label="Minimise chat">&#10005;</button>
+                    <button id="sc-clear" class="sc-icon-btn" type="button" title="Start a new chat" aria-label="Start a new chat"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></button>
+                    <button id="sc-close" class="sc-icon-btn" type="button" title="Minimise" aria-label="Minimise chat"><i class="bi bi-dash-lg" aria-hidden="true"></i></button>
                 </div>
             </header>
 
@@ -51,7 +51,7 @@
             <form id="sc-form" class="sc-form" autocomplete="off">
                 <input id="sc-input" class="form-control" maxlength="@AiSettings.MaxUserMessageLength"
                        placeholder="Type your question..." aria-label="Message" />
-                <button id="sc-send" class="btn btn-primary" type="submit">Send</button>
+                <button id="sc-send" class="btn btn-primary" type="submit" data-no-busy>Send</button>
             </form>
             <div class="sc-foot">AI can make mistakes - check before confirming. Emergency? Call 999.</div>
         </section>

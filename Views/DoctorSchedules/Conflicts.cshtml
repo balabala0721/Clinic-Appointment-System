@@ -1,36 +1,50 @@
 @model List<ScheduleConflict>
+@* Booked appointments that no longer fit a doctor's timetable or approved leave. *@
 @{
     ViewData["Title"] = "Schedule conflicts";
 }
 
-<a asp-action="Index" class="small">&larr; All schedules</a>
-<h1 class="h4 mt-2 mb-1">Schedule conflicts</h1>
-<p class="text-muted mb-4">Booked appointments that no longer fit the doctor's timetable or leave. Contact the patient, then reschedule or cancel.</p>
+<a asp-action="Index" class="back-link"><i class="bi bi-arrow-left" aria-hidden="true"></i> Doctor schedules</a>
+<div class="page-header">
+    <div>
+        <h1>Schedule conflicts</h1>
+        <p class="page-subtitle">Booked appointments that no longer fit the doctor's timetable or leave. Contact the patient, then reschedule or cancel.</p>
+    </div>
+    @if (Model.Count > 0)
+    {
+        <div class="page-actions">
+            <a asp-controller="Appointments" asp-action="Manage" class="btn btn-primary"><i class="bi bi-list-check" aria-hidden="true"></i> Go to appointments</a>
+        </div>
+    }
+</div>
 
-<div class="card-clean">
+<div class="card-clean @(Model.Count > 0 ? "card-table" : "")">
     @if (Model.Count == 0)
     {
-        <p class="text-muted mb-0">No conflicts. All booked appointments fit the current schedules.</p>
+        <div class="empty-state">
+            <div class="empty-icon" aria-hidden="true"><i class="bi bi-check2-circle"></i></div>
+            <div class="empty-title">No conflicts</div>
+            <p class="empty-text mb-0">All booked appointments fit the current schedules.</p>
+        </div>
     }
     else
     {
-        <table class="table table-sm align-middle mb-0">
-            <thead><tr><th>Date</th><th>Time</th><th>Doctor</th><th>Patient</th><th>Phone</th><th>Problem</th></tr></thead>
+        <table class="table table-stack">
+            <thead><tr><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Doctor</th><th scope="col">Patient</th><th scope="col">Phone</th><th scope="col">Problem</th></tr></thead>
             <tbody>
                 @foreach (var c in Model)
                 {
                     var a = c.Appointment;
                     <tr>
-                        <td>@a.AppointmentDate.ToString("ddd d MMM")</td>
-                        <td>@a.StartTime.ToString("HH:mm")</td>
-                        <td>@a.Doctor?.User.FullName</td>
-                        <td>@a.Patient?.User.FullName</td>
-                        <td>@a.Patient?.User.PhoneNo</td>
-                        <td><span class="text-danger">@c.Reason</span></td>
+                        <td data-label="Date">@Ui.DayDate(a.AppointmentDate)</td>
+                        <td data-label="Time">@Ui.Time(a.StartTime)</td>
+                        <td data-label="Doctor">@a.Doctor?.User.FullName</td>
+                        <td data-label="Patient"><strong>@a.Patient?.User.FullName</strong></td>
+                        <td data-label="Phone">@(a.Patient?.User.PhoneNo ?? "-")</td>
+                        <td data-label="Problem"><span class="status-badge status-noshow">@c.Reason</span></td>
                     </tr>
                 }
             </tbody>
         </table>
-        <a asp-controller="Appointments" asp-action="Manage" class="btn btn-outline-primary btn-sm mt-3">Go to appointments</a>
     }
 </div>

@@ -1,2 +1,157 @@
-@{ ViewData["Title"] = "Dashboard"; }
-<div class="page-header"><h1>Dashboard</h1></div>
+@*
+    Admin overview (landing page): summary cards, two charts, and leave requests waiting for review.
+    Read-only queries. Charts: wwwroot/js/admin-overview.js (Chart.js, colours from theme.css).
+*@
+@using System.Text.Json
+@using Microsoft.EntityFrameworkCore
+@inject ClinicSystem.Data.ClinicDbContext Db
+@inject ScheduleService Schedules
+@{
+    ViewData["Title"] = "Overview";
+    var today = ClinicClock.Today;
+
+    // Appointments per day: last 7 days, today and the next 6 days (cancelled / no-show excluded)
+    var from = today.AddDays(-7);
+    var to = today.AddDays(6);
+    var perDayRaw = await Db.Appointments.AsNoTracking()
+        .Where(a => a.AppointmentDate >= from && a.AppointmentDate <= to && !AppointmentStatus.ReleasesSlot.Contains(a.Status))
+        .GroupBy(a => a.AppointmentDate)
+        .Select(g => new { Date = g.Key, Count = g.Count() })
+        .ToListAsync();
+    var days = Enumerable.Range(0, to.DayNumber - from.DayNumber + 1).Select(i => from.AddDays(i)).ToList();
+    var perDay = days.Select(d => perDayRaw.FirstOrDefault(x => x.Date == d)?.Count ?? 0).ToList();
+
+    // Status breakdown: appointments dated in the last 30 days up to today
+    var statusFrom = today.AddDays(-30);
+    var byStatusRaw = await Db.Appointments.AsNoTracking()
+        .Where(a => a.AppointmentDate >= statusFrom && a.AppointmentDate <= today)
+        .GroupBy(a => a.Status)
+        .Select(g => new { Status = g.Key, Count = g.Count() })
+        .ToListAsync();
+    var byStatus = AppointmentStatus.All.Select(s => byStatusRaw.FirstOrDefault(x => x.Status == s)?.Count ?? 0).ToList();
+
+    var todayCount = perDay[days.IndexOf(today)];
+    var pendingLeave = await Schedules.GetLeavesAsync(LeaveStatus.Pending, null);
+    var conflicts = (await Schedules.GetConflictsAsync()).Count;
+    var lowStock = await Db.Drugs.AsNoTracking().CountAsync(d => d.IsActive && d.StockQuantity < d.MinStockLevel);
+
+    var chartData = new
+    {
+        perDay = new
+        {
+            labels = days.Select(d => d == today ? "Today" : d.ToString("ddd d")).ToArray(),
+            values = perDay,
+            todayIndex = days.IndexOf(today)
+        },
+        byStatus = new
+        {
+            keys = AppointmentStatus.All,
+            labels = AppointmentStatus.All.Select(Ui.StatusLabel).ToArray(),
+            values = byStatus
+        }
+    };
+    var perDaySummary = string.Join(", ", days.Select((d, i) => $"{Ui.Date(d)}: {perDay[i]}"));
+    var statusSummary = string.Join(", ", AppointmentStatus.All.Select((s, i) => $"{Ui.StatusLabel(s)}: {byStatus[i]}"));
+}
+
+<div class="page-header">
+    <div>
+        <h1>Overview</h1>
+        <p class="page-subtitle">@Ui.DayDate(today)</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" asp-controller="Appointments" asp-action="Manage" asp-route-date="@today.ToString("yyyy-MM-dd")">
+            <i class="bi bi-list-check" aria-hidden="true"></i> Today's appointments
+        </a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <a class="stat-card" asp-controller="Appointments" asp-action="Manage" asp-route-date="@today.ToString("yyyy-MM-dd")">
+        <div class="stat-label">Appointments today</div><div class="stat-value">@todayCount</div>
+    </a>
+    <a class="stat-card @(pendingLeave.Count > 0 ? "is-warn" : "")" asp-controller="DoctorSchedules" asp-action="Leaves">
+        <div class="stat-label">Leave to review</div><div class="stat-value">@pendingLeave.Count</div>
+    </a>
+    <a class="stat-card @(conflicts > 0 ? "is-alert" : "")" asp-controller="DoctorSchedules" asp-action="Conflicts">
+        <div class="stat-label">Schedule conflicts</div><div class="stat-value">@conflicts</div>
+    </a>
+    <a class="stat-card @(lowStock > 0 ? "is-warn" : "")" asp-controller="Drugs" asp-action="LowStock">
+        <div class="stat-label">Drugs low on stock</div><div class="stat-value">@lowStock</div>
+    </a>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <section class="card-clean h-100" aria-labelledby="chart-day-title">
+            <h2 class="section-title" id="chart-day-title">Appointments per day</h2>
+            <p class="text-muted small">Last 7 days and the coming week. Cancelled and no-show not counted.</p>
+            <div class="chart-box">
+                <canvas id="chart-per-day" role="img" aria-label="Bar chart of appointments per day. @perDaySummary"></canvas>
+            </div>
+        </section>
+    </div>
+    <div class="col-lg-4">
+        <section class="card-clean h-100" aria-labelledby="chart-status-title">
+            <h2 class="section-title" id="chart-status-title">Status breakdown</h2>
+            <p class="text-muted small">Appointments in the last 30 days.</p>
+            @if (byStatus.Sum() == 0)
+            {
+                <div class="empty-state is-compact">
+                    <div class="empty-icon" aria-hidden="true"><i class="bi bi-pie-chart"></i></div>
+                    <div class="empty-title">No appointments yet</div>
+                </div>
+            }
+            else
+            {
+                <div class="chart-box">
+                    <canvas id="chart-status" role="img" aria-label="Doughnut chart of appointment statuses. @statusSummary"></canvas>
+                </div>
+            }
+        </section>
+    </div>
+</div>
+
+<section class="card-clean" aria-labelledby="leave-title">
+    <div class="d-flex justify-content-between align-items-baseline">
+        <h2 class="section-title" id="leave-title">Leave waiting for review</h2>
+        <a class="small" asp-controller="DoctorSchedules" asp-action="Leaves">Open review queue</a>
+    </div>
+    @if (pendingLeave.Count == 0)
+    {
+        <div class="empty-state is-compact">
+            <div class="empty-icon" aria-hidden="true"><i class="bi bi-check2-all"></i></div>
+            <div class="empty-title">All caught up</div>
+            <p class="empty-text mb-0">New leave requests from doctors will appear here.</p>
+        </div>
+    }
+    else
+    {
+        <div class="appt-list">
+            @foreach (var l in pendingLeave.Take(5))
+            {
+                <div class="appt-row">
+                    <div class="appt-head">
+                        <div>
+                            <div class="appt-when">@l.Doctor?.User.FullName</div>
+                            <div class="appt-who">
+                                @Ui.Date(l.StartDate)@(l.EndDate != l.StartDate ? " – " + Ui.Date(l.EndDate) : "")
+                                &middot; @(l.IsWholeDay ? "Full day" : $"{Ui.Time(l.StartTime)} – {Ui.Time(l.EndTime)}")
+                                @if (!string.IsNullOrWhiteSpace(l.Reason)) { <text>&middot; @l.Reason</text> }
+                            </div>
+                        </div>
+                        <a class="btn btn-secondary btn-sm" asp-controller="DoctorSchedules" asp-action="Leaves">Review</a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@* Chart data as JSON. System.Text.Json escapes < > & so this is safe inside <script>. *@
+<script type="application/json" id="chart-data">@Html.Raw(JsonSerializer.Serialize(chartData))</script>
+
+@section Scripts {
+    <script src="~/lib/chart.js/chart.umd.js"></script>
+    <script src="~/js/admin-overview.js" asp-append-version="true"></script>
+}

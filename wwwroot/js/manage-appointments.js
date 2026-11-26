@@ -3,12 +3,17 @@
 // 2-hour patient cutoff for staff but still checks the slot is free.
 $(function () {
     $('.js-reschedule').on('click', function () {
-        $('.reschedule-row[data-id="' + $(this).data('id') + '"]').toggleClass('d-none');
+        const $btn = $(this);
+        const $row = $('.reschedule-row[data-id="' + $btn.data('id') + '"]').toggleClass('d-none');
+        const open = !$row.hasClass('d-none');
+        $btn.attr('aria-expanded', open).text(open ? 'Close' : 'Reschedule');
+        if (open) $row.find('.js-new-date').trigger('focus');
     });
 
     $('.reschedule-row .js-new-date').on('change', function () {
         const $row = $(this).closest('.reschedule-row');
         const $confirm = $row.find('.js-confirm-reschedule').prop('disabled', true);
+        Clinic.inline($row.find('.js-msg'), '', false);
         $row.removeData('newTime');
 
         Clinic.loadSlots($row.data('doctor'), $(this).val(), $row.find('.js-new-slots'), function (value) {
@@ -18,8 +23,11 @@ $(function () {
     });
 
     $('.reschedule-row .js-confirm-reschedule').on('click', function () {
-        const $row = $(this).closest('.reschedule-row');
-        $(this).prop('disabled', true);
+        const $btn = $(this);
+        const $row = $btn.closest('.reschedule-row');
+        const $msg = $row.find('.js-msg');
+        Clinic.inline($msg, '', false);
+        Clinic.busy($btn, true);
 
         Clinic.postJson('/Appointments/Reschedule', {
             appointmentId: $row.data('id'),
@@ -27,9 +35,10 @@ $(function () {
             startTime: $row.data('newTime')
         })
             .done(function (res) {
-                Clinic.showAlert(res.message, res.success);
-                if (res.success) setTimeout(function () { location.reload(); }, 800);
+                if (!res.success) { Clinic.inline($msg, res.message, false); Clinic.busy($btn, false); return; }
+                Clinic.toastAfterReload(res.message);
+                location.reload();
             })
-            .fail(function (xhr) { Clinic.showAlert(Clinic.errorMessage(xhr), false); });
+            .fail(function (xhr) { Clinic.inline($msg, Clinic.errorMessage(xhr), false); Clinic.busy($btn, false); });
     });
 });

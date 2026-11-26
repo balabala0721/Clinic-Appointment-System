@@ -1,23 +1,48 @@
 @model DoctorWeekViewModel
+@*
+    One doctor's week. Used for:
+      - DoctorSchedules/Mine     (doctor: own week + appointments + leave requests)
+      - DoctorSchedules/Doctor   (patients/staff: working hours only)
+*@
 @{
-    ViewData["Title"] = Model.IsOwnSchedule ? "My schedule" : Model.Doctor.User.FullName;
-    var action = Model.IsOwnSchedule ? "Mine" : "Doctor";
-    var routeId = Model.IsOwnSchedule ? (int?)null : Model.Doctor.DoctorId;
+    var own = Model.IsOwnSchedule;
+    ViewData["Title"] = own ? "My schedule" : Model.Doctor.User.FullName;
+    var action = own ? "Mine" : "Doctor";
+    var routeId = own ? (int?)null : Model.Doctor.DoctorId;
+    var today = ClinicClock.Today;
+    var weekEnd = Model.WeekStart.AddDays(6);
 }
 
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+<div class="page-header">
     <div>
-        <h1 class="h4 mb-0">@(Model.IsOwnSchedule ? "My schedule" : Model.Doctor.User.FullName)</h1>
-        <span class="text-muted">@Model.Doctor.Specialisation?.Name</span>
+        <h1>@(own ? "My schedule" : Model.Doctor.User.FullName)</h1>
+        <p class="page-subtitle">@Model.Doctor.Specialisation?.Name</p>
     </div>
-    <div class="btn-group btn-group-sm">
-        <a class="btn btn-outline-secondary" asp-action="@action" asp-route-id="@routeId" asp-route-week="@Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd")">&larr; Prev</a>
-        <span class="btn btn-outline-secondary disabled">@Model.WeekStart.ToString("d MMM") - @Model.WeekStart.AddDays(6).ToString("d MMM")</span>
-        <a class="btn btn-outline-secondary" asp-action="@action" asp-route-id="@routeId" asp-route-week="@Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd")">Next &rarr;</a>
+    <div class="page-actions">
+        @if (own)
+        {
+            <a class="btn btn-secondary" href="#leave"><i class="bi bi-airplane" aria-hidden="true"></i> Request leave</a>
+        }
+        else if (User.IsInRole(Roles.Patient))
+        {
+            <a asp-controller="Appointments" asp-action="Book" asp-route-doctorId="@Model.Doctor.DoctorId" class="btn btn-primary">
+                <i class="bi bi-calendar-plus" aria-hidden="true"></i> Book with this doctor
+            </a>
+        }
     </div>
 </div>
 
-<div class="week-grid mb-4">
+<nav class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3" aria-label="Week">
+    <a class="btn btn-secondary btn-sm" asp-action="@action" asp-route-id="@routeId" asp-route-week="@Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd")">
+        <i class="bi bi-chevron-left" aria-hidden="true"></i> Previous week
+    </a>
+    <strong>@Ui.Date(Model.WeekStart) – @Ui.Date(weekEnd)</strong>
+    <a class="btn btn-secondary btn-sm" asp-action="@action" asp-route-id="@routeId" asp-route-week="@Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd")">
+        Next week <i class="bi bi-chevron-right" aria-hidden="true"></i>
+    </a>
+</nav>
+
+<div class="week-grid mb-5">
     @for (var i = 0; i < 7; i++)
     {
         var date = Model.WeekStart.AddDays(i);
@@ -25,12 +50,16 @@
         var wholeDayLeave = Model.Leaves.Any(l => l.IsWholeDay && l.StartDate <= date && l.EndDate >= date);
         var partialLeave = Model.Leaves.Where(l => !l.IsWholeDay && l.StartDate <= date && l.EndDate >= date).ToList();
         var off = schedule == null || wholeDayLeave;
+        var dayAppts = Model.Appointments.Where(a => a.AppointmentDate == date).ToList();
 
-        <div class="week-day @(off ? "off" : "")">
-            <strong>@date.ToString("ddd d")</strong>
+        <section class="week-day @(off ? "off" : "") @(date == today ? "is-today" : "")" aria-label="@Ui.DayDate(date)">
+            <div class="week-date">
+                <span>@date.ToString("ddd") @date.Day</span>
+                @if (date == today) { <span class="small">Today</span> }
+            </div>
             @if (wholeDayLeave)
             {
-                <div>On leave</div>
+                <span class="leave-tag">On leave</span>
             }
             else if (schedule == null)
             {
@@ -38,77 +67,108 @@
             }
             else
             {
-                <div>@schedule.StartTime.ToString("HH:mm") - @schedule.EndTime.ToString("HH:mm")</div>
+                <div class="hours">@Ui.Time(schedule.StartTime) – @Ui.Time(schedule.EndTime)</div>
                 @if (schedule.BreakStart.HasValue)
                 {
-                    <div class="text-muted small">Break @schedule.BreakStart.Value.ToString("HH:mm")-@schedule.BreakEnd!.Value.ToString("HH:mm")</div>
+                    <div class="text-muted small">Break @Ui.Time(schedule.BreakStart.Value) – @Ui.Time(schedule.BreakEnd!.Value)</div>
                 }
                 @foreach (var l in partialLeave)
                 {
-                    <div class="text-muted small">Away @l.StartTime!.Value.ToString("HH:mm")-@l.EndTime!.Value.ToString("HH:mm")</div>
+                    <span class="leave-tag">Away @Ui.Time(l.StartTime!.Value) – @Ui.Time(l.EndTime!.Value)</span>
                 }
-                @foreach (var a in Model.Appointments.Where(a => a.AppointmentDate == date))
+                @foreach (var a in dayAppts)
                 {
                     <div class="appt">
-                        @a.StartTime.ToString("HH:mm") @a.Patient?.User.FullName
+                        <strong>@Ui.Time(a.StartTime)</strong> @a.Patient?.User.FullName
                         @if (!string.IsNullOrEmpty(a.ReasonForVisit))
                         {
                             <div class="text-muted small">@a.ReasonForVisit</div>
                         }
                     </div>
                 }
+                @if (own && dayAppts.Count == 0)
+                {
+                    <div class="text-muted small mt-2">No bookings</div>
+                }
             }
-        </div>
+        </section>
     }
 </div>
 
-@if (Model.IsOwnSchedule)
+@if (own)
 {
-    <div class="d-flex justify-content-end mb-3">
-        <a asp-controller="Appointments" asp-action="Doctor" class="btn btn-outline-primary btn-sm">Manage my appointments</a>
-    </div>
+    <section id="leave" aria-labelledby="leave-title" class="row g-4">
+        <div class="col-lg-5">
+            <form asp-action="RequestLeave" method="post" class="card-clean">
+                <h2 class="section-title" id="leave-title">Request leave</h2>
+                <p class="text-muted small">The clinic admin reviews each request. Patients already booked will be contacted if it's approved.</p>
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <label class="form-label" asp-for="LeaveForm.StartDate">From</label>
+                        <input asp-for="LeaveForm.StartDate" type="date" class="form-control" required />
+                        <span asp-validation-for="LeaveForm.StartDate"></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" asp-for="LeaveForm.EndDate">To</label>
+                        <input asp-for="LeaveForm.EndDate" type="date" class="form-control" required />
+                        <span asp-validation-for="LeaveForm.EndDate"></span>
+                    </div>
+                </div>
+                <div class="row g-3 mb-1">
+                    <div class="col-sm-6">
+                        <label class="form-label" asp-for="LeaveForm.StartTime">Start time <span class="optional">(optional)</span></label>
+                        <input asp-for="LeaveForm.StartTime" type="time" class="form-control" />
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label" asp-for="LeaveForm.EndTime">End time <span class="optional">(optional)</span></label>
+                        <input asp-for="LeaveForm.EndTime" type="time" class="form-control" />
+                    </div>
+                </div>
+                <div class="form-text mb-3">Leave both times empty for full-day leave.</div>
+                <label class="form-label" asp-for="LeaveForm.Reason">Reason</label>
+                <input asp-for="LeaveForm.Reason" class="form-control mb-4" placeholder="e.g. Medical conference" />
+                <button class="btn btn-primary" data-busy-text="Sending...">Send request</button>
+            </form>
+        </div>
 
-    <div class="row g-4">
-    <div class="col-lg-6">
-    <div class="card-clean">
-        <h2 class="h6 mb-3">My leave requests</h2>
-        @if (Model.MyLeaveRequests.Count == 0)
-        {
-            <p class="text-muted small mb-0">No current or upcoming leave.</p>
-        }
-        @foreach (var l in Model.MyLeaveRequests)
-        {
-            var badge = l.Status == LeaveStatus.Approved ? "bg-success"
-                      : l.Status == LeaveStatus.Rejected ? "bg-danger" : "bg-warning text-dark";
-            <div class="d-flex justify-content-between align-items-center border-bottom py-2 small">
-                <span>
-                    @l.StartDate.ToString("d MMM") @(l.EndDate != l.StartDate ? "- " + l.EndDate.ToString("d MMM") : "")
-                    @(l.IsWholeDay ? "" : $"({l.StartTime:HH:mm}-{l.EndTime:HH:mm})")
-                    <span class="text-muted">@l.Reason</span>
-                </span>
-                <span class="badge @badge">@l.Status</span>
+        <div class="col-lg-7">
+            <div class="card-clean">
+                <h2 class="section-title">My leave requests</h2>
+                @if (Model.MyLeaveRequests.Count == 0)
+                {
+                    <div class="empty-state is-compact">
+                        <div class="empty-icon" aria-hidden="true"><i class="bi bi-airplane"></i></div>
+                        <div class="empty-title">No current or upcoming leave</div>
+                        <p class="empty-text mb-0">Requests you send appear here with their status.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="appt-list">
+                        @foreach (var l in Model.MyLeaveRequests)
+                        {
+                            <div class="appt-row">
+                                <div class="appt-head">
+                                    <div>
+                                        <div class="appt-when">
+                                            @Ui.Date(l.StartDate)@(l.EndDate != l.StartDate ? " – " + Ui.Date(l.EndDate) : "")
+                                        </div>
+                                        <div class="appt-who">
+                                            @(l.IsWholeDay ? "Full day" : $"{Ui.Time(l.StartTime)} – {Ui.Time(l.EndTime)}")
+                                            @if (!string.IsNullOrWhiteSpace(l.Reason)) { <text> &middot; @l.Reason</text> }
+                                        </div>
+                                    </div>
+                                    @Ui.StatusBadge(l.Status)
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
-        }
-    </div>
-    </div>
-    <div class="col-lg-6">
-    <form asp-action="RequestLeave" method="post" class="card-clean">
-        <h2 class="h6 mb-3">Request leave</h2>
-        <div class="row g-2 mb-2">
-            <div class="col"><label class="form-label small">From</label><input asp-for="LeaveForm.StartDate" type="date" class="form-control form-control-sm" /></div>
-            <div class="col"><label class="form-label small">To</label><input asp-for="LeaveForm.EndDate" type="date" class="form-control form-control-sm" /></div>
         </div>
-        <div class="row g-2 mb-2">
-            <div class="col"><label class="form-label small">Start time (optional)</label><input asp-for="LeaveForm.StartTime" type="time" class="form-control form-control-sm" /></div>
-            <div class="col"><label class="form-label small">End time (optional)</label><input asp-for="LeaveForm.EndTime" type="time" class="form-control form-control-sm" /></div>
-        </div>
-        <div class="mb-3"><label class="form-label small">Reason</label><input asp-for="LeaveForm.Reason" class="form-control form-control-sm" /></div>
-        <button class="btn btn-primary btn-sm">Submit request</button>
-    </form>
-    </div>
-    </div>
+    </section>
 }
-else if (User.IsInRole(Roles.Patient))
-{
-    <a asp-controller="Appointments" asp-action="Book" asp-route-doctorId="@Model.Doctor.DoctorId" class="btn btn-primary">Book with this doctor</a>
+
+@section Scripts {
+    @if (own) { <partial name="_ValidationScriptsPartial" /> }
 }

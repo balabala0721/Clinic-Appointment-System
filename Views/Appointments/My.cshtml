@@ -1,75 +1,140 @@
 @model List<Appointment>
+@*
+    Patient's appointments: Upcoming / Past tabs.
+    JS (wwwroot/js/my-appointments.js) hooks: .appt-row[data-id][data-doctor][data-summary], .js-cancel,
+    .js-reschedule, .reschedule-panel, .js-new-date, .js-new-slots, .js-confirm-reschedule, .js-msg,
+    #upcoming-empty, #upcoming-count.
+*@
 @{
     ViewData["Title"] = "My appointments";
     var now = ClinicClock.Now;
     var upcoming = Model.Where(a => a.StartsAt >= now && AppointmentStatus.Changeable.Contains(a.Status))
                         .OrderBy(a => a.StartsAt).ToList();
-    var history = Model.Except(upcoming).ToList();
+    var past = Model.Except(upcoming).ToList();     // already newest first
+    var cutoff = TimeSpan.FromHours(ClinicSettings.MinCancelHoursBefore);
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h4 mb-0">My appointments</h1>
-    <a class="btn btn-primary btn-sm" asp-action="Book">Book new</a>
+<div class="page-header">
+    <div>
+        <h1>My appointments</h1>
+        <p class="page-subtitle">Reschedule or cancel up to @ClinicSettings.MinCancelHoursBefore hours before your appointment.</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" asp-action="Book"><i class="bi bi-calendar-plus" aria-hidden="true"></i> Book appointment</a>
+    </div>
 </div>
 
-<div class="card-clean mb-4">
-    <h2 class="h6 mb-3">Upcoming</h2>
-    @if (upcoming.Count == 0)
-    {
-        <p class="text-muted mb-0">No upcoming appointments.</p>
-    }
-    @foreach (var a in upcoming)
-    {
-        <div class="border-bottom py-3 appt-row" data-id="@a.AppointmentId" data-doctor="@a.DoctorId">
-            <div class="d-flex justify-content-between flex-wrap gap-2">
-                <div>
-                    <strong>@a.AppointmentDate.ToString("ddd, d MMM yyyy") &middot; @a.StartTime.ToString("HH:mm")</strong><br />
-                    <span class="text-muted">@a.Doctor?.User.FullName &middot; @a.Doctor?.Specialisation?.Name</span>
-                    <span class="badge bg-light text-dark ms-1">@a.Status</span>
-                </div>
-                <div>
-                    <button class="btn btn-outline-primary btn-sm js-reschedule">Reschedule</button>
-                    <button class="btn btn-outline-danger btn-sm js-cancel">Cancel</button>
-                </div>
+<div class="tabs" role="tablist" aria-label="Appointments">
+    <button class="tab active" id="tab-upcoming-btn" data-bs-toggle="tab" data-bs-target="#tab-upcoming" type="button"
+            role="tab" aria-controls="tab-upcoming" aria-selected="true">
+        Upcoming <span class="tab-count" id="upcoming-count">@upcoming.Count</span>
+    </button>
+    <button class="tab" id="tab-past-btn" data-bs-toggle="tab" data-bs-target="#tab-past" type="button"
+            role="tab" aria-controls="tab-past" aria-selected="false">
+        Past <span class="tab-count">@past.Count</span>
+    </button>
+</div>
+
+<div class="tab-content" id="my-appointments" data-cutoff-hours="@ClinicSettings.MinCancelHoursBefore">
+    @* ------------------------------------------------------------------ Upcoming *@
+    <div class="tab-pane fade show active" id="tab-upcoming" role="tabpanel" aria-labelledby="tab-upcoming-btn" tabindex="0">
+        <div class="card-clean">
+            <div id="upcoming-empty" class="empty-state" @(upcoming.Count == 0 ? "" : "hidden")>
+                <div class="empty-icon" aria-hidden="true"><i class="bi bi-calendar"></i></div>
+                <div class="empty-title">No upcoming appointments</div>
+                <p class="empty-text">When you book, your appointments appear here.</p>
+                <a class="btn btn-outline-primary" asp-action="Book">Book appointment</a>
             </div>
 
-            @* Hidden reschedule panel, opened by my-appointments.js *@
-            <div class="reschedule-panel mt-3 d-none">
-                <input type="date" class="form-control form-control-sm mb-2 js-new-date" style="max-width: 200px"
-                       min="@ClinicClock.Today.ToString("yyyy-MM-dd")"
-                       max="@ClinicClock.Today.AddDays(ClinicSettings.MaxBookingDaysAhead).ToString("yyyy-MM-dd")" />
-                <div class="slot-grid mb-2 js-new-slots"></div>
-                <button class="btn btn-primary btn-sm js-confirm-reschedule" disabled>Confirm new time</button>
+            <div class="appt-list">
+                @foreach (var a in upcoming)
+                {
+                    var canChange = a.StartsAt - now >= cutoff;
+                    var summary = $"{a.Doctor?.User.FullName} on {Ui.DayDate(a.AppointmentDate)} at {Ui.Time(a.StartTime)}";
+                    <div class="appt-row" data-id="@a.AppointmentId" data-doctor="@a.DoctorId" data-summary="@summary">
+                        <div class="appt-head">
+                            <div class="d-flex gap-3 align-items-center min-w-0">
+                                <div class="date-badge" aria-hidden="true">
+                                    <div class="dow">@a.AppointmentDate.ToString("ddd")</div>
+                                    <div class="day">@a.AppointmentDate.Day</div>
+                                    <div class="mon">@a.AppointmentDate.ToString("MMM")</div>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="appt-when">@Ui.DayDate(a.AppointmentDate) &middot; @Ui.Time(a.StartTime)</div>
+                                    <div class="appt-who">@a.Doctor?.User.FullName &middot; @a.Doctor?.Specialisation?.Name</div>
+                                    <div class="mt-1">@Ui.StatusBadge(a.Status)</div>
+                                </div>
+                            </div>
+                            @if (canChange)
+                            {
+                                <div class="appt-actions">
+                                    <button type="button" class="btn btn-secondary btn-sm js-reschedule" aria-expanded="false">
+                                        <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Reschedule
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm js-cancel" data-busy-text="Cancelling...">Cancel</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="small text-muted text-end">
+                                    Too close to change online.<br />Please call @ClinicInfo.Phone.
+                                </div>
+                            }
+                        </div>
+
+                        @if (canChange)
+                        {
+                            @* Hidden reschedule panel, opened by my-appointments.js - same doctor, new date/time *@
+                            <div class="reschedule-panel d-none">
+                                <label class="form-label" for="new-date-@a.AppointmentId">New date with @a.Doctor?.User.FullName</label>
+                                <input id="new-date-@a.AppointmentId" type="date" class="form-control mb-3 js-new-date field-narrow"
+                                       min="@ClinicClock.Today.ToString("yyyy-MM-dd")"
+                                       max="@ClinicClock.Today.AddDays(ClinicSettings.MaxBookingDaysAhead).ToString("yyyy-MM-dd")" />
+                                <div class="slot-grid is-compact mb-3 js-new-slots" aria-live="polite"></div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-primary btn-sm js-confirm-reschedule" data-busy-text="Saving..." disabled>Confirm new time</button>
+                                    <button type="button" class="btn btn-secondary btn-sm js-reschedule">Keep current time</button>
+                                </div>
+                                <div class="inline-msg js-msg" aria-live="assertive"></div>
+                            </div>
+                        }
+                        <div class="inline-msg js-row-msg" aria-live="assertive"></div>
+                    </div>
+                }
             </div>
         </div>
-    }
-    <p class="text-muted small mt-3 mb-0">
-        Changes must be made at least @ClinicSettings.MinCancelHoursBefore hours before your appointment.
-    </p>
-</div>
+    </div>
 
-<div class="card-clean">
-    <h2 class="h6 mb-3">History</h2>
-    @if (history.Count == 0)
-    {
-        <p class="text-muted mb-0">No past appointments.</p>
-    }
-    else
-    {
-        <table class="table table-sm mb-0">
-            <thead><tr><th>Date</th><th>Doctor</th><th>Status</th></tr></thead>
-            <tbody>
-                @foreach (var a in history)
-                {
-                    <tr>
-                        <td>@a.AppointmentDate.ToString("d MMM yyyy") @a.StartTime.ToString("HH:mm")</td>
-                        <td>@a.Doctor?.User.FullName</td>
-                        <td>@a.Status</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+    @* ---------------------------------------------------------------------- Past *@
+    <div class="tab-pane fade" id="tab-past" role="tabpanel" aria-labelledby="tab-past-btn" tabindex="0">
+        <div class="card-clean @(past.Count > 0 ? "card-table" : "")">
+            @if (past.Count == 0)
+            {
+                <div class="empty-state">
+                    <div class="empty-icon" aria-hidden="true"><i class="bi bi-clock-history"></i></div>
+                    <div class="empty-title">No past appointments</div>
+                    <p class="empty-text mb-0">Your visit history will appear here.</p>
+                </div>
+            }
+            else
+            {
+                <table class="table table-stack">
+                    <thead><tr><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Doctor</th><th scope="col">Status</th></tr></thead>
+                    <tbody>
+                        @foreach (var a in past)
+                        {
+                            <tr>
+                                <td data-label="Date">@Ui.Date(a.AppointmentDate)</td>
+                                <td data-label="Time">@Ui.Time(a.StartTime)</td>
+                                <td data-label="Doctor">@a.Doctor?.User.FullName <span class="text-muted small d-block">@a.Doctor?.Specialisation?.Name</span></td>
+                                <td data-label="Status">@Ui.StatusBadge(a.Status)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
 </div>
 
 @section Scripts {

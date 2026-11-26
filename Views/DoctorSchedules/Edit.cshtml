@@ -1,40 +1,56 @@
 @model EditScheduleViewModel
+@* Admin: one doctor's weekly timetable and leave. Remove asks for confirmation (data-confirm). *@
 @{
     ViewData["Title"] = "Schedule - " + Model.Doctor.User.FullName;
-    var days = Enumerable.Range(0, 7).Select(i => (Value: i, Name: ((System.DayOfWeek)i).ToString())).ToList();
+    var days = Enumerable.Range(0, 7).Select(i => (Value: i, Name: Ui.DayName(i))).ToList();
     var editing = Model.Form.ScheduleId != 0;
 }
 
-<a asp-action="Index" class="small">&larr; All schedules</a>
-<h1 class="h4 mt-2 mb-4">@Model.Doctor.User.FullName <span class="text-muted h6">@Model.Doctor.Specialisation?.Name</span></h1>
+<a asp-action="Index" class="back-link"><i class="bi bi-arrow-left" aria-hidden="true"></i> Doctor schedules</a>
+<div class="page-header">
+    <div>
+        <h1>@Model.Doctor.User.FullName</h1>
+        <p class="page-subtitle">@Model.Doctor.Specialisation?.Name</p>
+    </div>
+    <div class="page-actions">
+        <a asp-action="Doctor" asp-route-id="@Model.Doctor.DoctorId" class="btn btn-secondary"><i class="bi bi-calendar-week" aria-hidden="true"></i> View week</a>
+    </div>
+</div>
 
 <div class="row g-4">
     <div class="col-lg-7">
-        <div class="card-clean mb-4">
-            <h2 class="h6 mb-3">Weekly timetable</h2>
+        <section class="card-clean mb-4 @(Model.Schedules.Count > 0 ? "card-table" : "")" aria-labelledby="timetable-title">
+            <h2 class="section-title @(Model.Schedules.Count > 0 ? "px-4 pt-4" : "")" id="timetable-title">Weekly timetable</h2>
             @if (Model.Schedules.Count == 0)
             {
-                <p class="text-muted mb-0">No working days yet. Add one on the right.</p>
+                <div class="empty-state is-compact">
+                    <div class="empty-icon" aria-hidden="true"><i class="bi bi-calendar-plus"></i></div>
+                    <div class="empty-title">No working days yet</div>
+                    <p class="empty-text mb-0">Patients can't book this doctor until you add one with the form.</p>
+                </div>
             }
             else
             {
-                <table class="table table-sm align-middle mb-0">
-                    <thead><tr><th>Day</th><th>Hours</th><th>Break</th><th>Slot</th><th>Effective</th><th></th></tr></thead>
+                <table class="table table-stack">
+                    <thead><tr><th scope="col">Day</th><th scope="col">Hours</th><th scope="col">Break</th><th scope="col">Slot</th><th scope="col">Effective</th><th scope="col" class="actions"><span class="visually-hidden">Actions</span></th></tr></thead>
                     <tbody>
                         @foreach (var s in Model.Schedules)
                         {
+                            var day = Ui.DayName(s.DayOfWeek);
                             <tr>
-                                <td>@(((System.DayOfWeek)s.DayOfWeek).ToString())</td>
-                                <td>@s.StartTime.ToString("HH:mm")-@s.EndTime.ToString("HH:mm")</td>
-                                <td>@(s.BreakStart.HasValue ? $"{s.BreakStart:HH:mm}-{s.BreakEnd:HH:mm}" : "-")</td>
-                                <td>@s.SlotDurationMinutes min</td>
-                                <td class="small">@s.EffectiveFrom.ToString("d MMM yy") @(s.EffectiveTo.HasValue ? "to " + s.EffectiveTo.Value.ToString("d MMM yy") : "onwards")</td>
-                                <td class="text-end text-nowrap">
-                                    <a asp-action="Edit" asp-route-doctorId="@s.DoctorId" asp-route-scheduleId="@s.ScheduleId" class="btn btn-link btn-sm">Edit</a>
-                                    <form asp-action="Deactivate" method="post" class="d-inline" onsubmit="return confirm('Remove this working day?')">
+                                <td data-label="Day"><strong>@day</strong></td>
+                                <td data-label="Hours">@Ui.TimeRange(s.StartTime, s.EndTime)</td>
+                                <td data-label="Break">@(s.BreakStart.HasValue ? Ui.TimeRange(s.BreakStart.Value, s.BreakEnd!.Value) : "-")</td>
+                                <td data-label="Slot">@s.SlotDurationMinutes min</td>
+                                <td data-label="Effective" class="small">@Ui.Date(s.EffectiveFrom) @(s.EffectiveTo.HasValue ? "to " + Ui.Date(s.EffectiveTo.Value) : "onwards")</td>
+                                <td class="actions">
+                                    <a asp-action="Edit" asp-route-doctorId="@s.DoctorId" asp-route-scheduleId="@s.ScheduleId" class="btn btn-secondary btn-sm" aria-label="Edit @day">Edit</a>
+                                    <form asp-action="Deactivate" method="post" class="d-inline m-0">
                                         <input type="hidden" name="scheduleId" value="@s.ScheduleId" />
                                         <input type="hidden" name="doctorId" value="@s.DoctorId" />
-                                        <button class="btn btn-link btn-sm text-danger">Remove</button>
+                                        <button class="btn btn-outline-danger btn-sm" aria-label="Remove @day"
+                                                data-confirm="@Model.Doctor.User.FullName will no longer work on @day (@Ui.TimeRange(s.StartTime, s.EndTime)). Patients can't book new times that day; existing bookings will show under Conflicts."
+                                                data-confirm-title="Remove this working day?" data-confirm-ok="Remove day">Remove</button>
                                     </form>
                                 </td>
                             </tr>
@@ -42,77 +58,91 @@
                     </tbody>
                 </table>
             }
-        </div>
+        </section>
 
-        <div class="card-clean">
-            <h2 class="h6 mb-3">Upcoming leave</h2>
+        <section class="card-clean" aria-labelledby="leave-list-title">
+            <h2 class="section-title" id="leave-list-title">Upcoming leave</h2>
             @if (Model.Leaves.Count == 0)
             {
-                <p class="text-muted mb-0">None.</p>
+                <p class="text-muted mb-0">No upcoming leave.</p>
             }
-            @foreach (var l in Model.Leaves)
+            else
             {
-                <div class="small border-bottom py-1">
-                    @l.StartDate.ToString("d MMM") @(l.EndDate != l.StartDate ? "- " + l.EndDate.ToString("d MMM") : "")
-                    @(l.IsWholeDay ? "(full day)" : $"({l.StartTime:HH:mm}-{l.EndTime:HH:mm})")
-                    <span class="badge bg-light text-dark">@l.Status</span> @l.Reason
+                <div class="appt-list">
+                    @foreach (var l in Model.Leaves)
+                    {
+                        <div class="appt-row">
+                            <div class="appt-head">
+                                <div>
+                                    <div class="appt-when">@Ui.Date(l.StartDate)@(l.EndDate != l.StartDate ? " – " + Ui.Date(l.EndDate) : "")</div>
+                                    <div class="appt-who">@(l.IsWholeDay ? "Full day" : $"{Ui.Time(l.StartTime)} – {Ui.Time(l.EndTime)}") @(string.IsNullOrWhiteSpace(l.Reason) ? "" : "· " + l.Reason)</div>
+                                </div>
+                                @Ui.StatusBadge(l.Status)
+                            </div>
+                        </div>
+                    }
                 </div>
             }
-        </div>
+        </section>
     </div>
 
     <div class="col-lg-5">
-        <form asp-action="Save" method="post" class="card-clean mb-4">
-            <h2 class="h6 mb-3">@(editing ? "Edit working day" : "Add working day")</h2>
+        <form asp-action="Save" method="post" class="card-clean mb-4" aria-labelledby="form-title">
+            <h2 class="section-title" id="form-title">@(editing ? "Edit working day" : "Add a working day")</h2>
             <input type="hidden" asp-for="Form.ScheduleId" />
             <input type="hidden" asp-for="Form.DoctorId" />
 
-            <div class="mb-2">
-                <label class="form-label small" asp-for="Form.DayOfWeek">Day</label>
-                <select asp-for="Form.DayOfWeek" class="form-select form-select-sm">
+            <div class="mb-3">
+                <label class="form-label" asp-for="Form.DayOfWeek">Day</label>
+                <select asp-for="Form.DayOfWeek" class="form-select">
                     @foreach (var d in days)
                     {
                         <option value="@d.Value">@d.Name</option>
                     }
                 </select>
             </div>
-            <div class="row g-2 mb-2">
-                <div class="col"><label class="form-label small">Start</label><input asp-for="Form.StartTime" type="time" class="form-control form-control-sm" /></div>
-                <div class="col"><label class="form-label small">End</label><input asp-for="Form.EndTime" type="time" class="form-control form-control-sm" /></div>
+            <div class="row g-3 mb-3">
+                <div class="col-6"><label class="form-label" asp-for="Form.StartTime">Starts</label><input asp-for="Form.StartTime" type="time" class="form-control" required /></div>
+                <div class="col-6"><label class="form-label" asp-for="Form.EndTime">Ends</label><input asp-for="Form.EndTime" type="time" class="form-control" required /></div>
             </div>
-            <div class="row g-2 mb-2">
-                <div class="col"><label class="form-label small">Break start</label><input asp-for="Form.BreakStart" type="time" class="form-control form-control-sm" /></div>
-                <div class="col"><label class="form-label small">Break end</label><input asp-for="Form.BreakEnd" type="time" class="form-control form-control-sm" /></div>
+            <div class="row g-3 mb-1">
+                <div class="col-6"><label class="form-label" asp-for="Form.BreakStart">Break from <span class="optional">(optional)</span></label><input asp-for="Form.BreakStart" type="time" class="form-control" /></div>
+                <div class="col-6"><label class="form-label" asp-for="Form.BreakEnd">Break until <span class="optional">(optional)</span></label><input asp-for="Form.BreakEnd" type="time" class="form-control" /></div>
             </div>
-            <div class="mb-2">
-                <label class="form-label small">Slot length (minutes)</label>
-                <input asp-for="Form.SlotDurationMinutes" type="number" min="5" max="240" class="form-control form-control-sm" />
+            <div class="form-text mb-3">Leave the break empty if there is none.</div>
+            <div class="mb-3">
+                <label class="form-label" asp-for="Form.SlotDurationMinutes">Appointment length (minutes)</label>
+                <input asp-for="Form.SlotDurationMinutes" type="number" min="5" max="240" step="5" class="form-control field-narrow" />
             </div>
-            <div class="row g-2 mb-3">
-                <div class="col"><label class="form-label small">From</label><input asp-for="Form.EffectiveFrom" type="date" class="form-control form-control-sm" /></div>
-                <div class="col"><label class="form-label small">Until (optional)</label><input asp-for="Form.EffectiveTo" type="date" class="form-control form-control-sm" /></div>
+            <div class="row g-3 mb-4">
+                <div class="col-6"><label class="form-label" asp-for="Form.EffectiveFrom">Starting</label><input asp-for="Form.EffectiveFrom" type="date" class="form-control" /></div>
+                <div class="col-6"><label class="form-label" asp-for="Form.EffectiveTo">Until <span class="optional">(optional)</span></label><input asp-for="Form.EffectiveTo" type="date" class="form-control" /></div>
             </div>
-            <button class="btn btn-primary btn-sm">@(editing ? "Save changes" : "Add")</button>
-            @if (editing)
-            {
-                <a asp-action="Edit" asp-route-doctorId="@Model.Doctor.DoctorId" class="btn btn-link btn-sm">Cancel</a>
-            }
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary" data-busy-text="Saving...">@(editing ? "Save changes" : "Add working day")</button>
+                @if (editing)
+                {
+                    <a asp-action="Edit" asp-route-doctorId="@Model.Doctor.DoctorId" class="btn btn-secondary">Cancel edit</a>
+                }
+            </div>
         </form>
 
-        <form asp-action="AddLeave" method="post" class="card-clean">
-            <h2 class="h6 mb-3">Record leave</h2>
+        <form asp-action="AddLeave" method="post" class="card-clean" aria-labelledby="leave-form-title">
+            <h2 class="section-title" id="leave-form-title">Record leave</h2>
+            <p class="text-muted small">Leave recorded here is approved straight away.</p>
             <input type="hidden" asp-for="LeaveForm.DoctorId" />
-            <div class="row g-2 mb-2">
-                <div class="col"><label class="form-label small">From</label><input asp-for="LeaveForm.StartDate" type="date" class="form-control form-control-sm" /></div>
-                <div class="col"><label class="form-label small">To</label><input asp-for="LeaveForm.EndDate" type="date" class="form-control form-control-sm" /></div>
+            <div class="row g-3 mb-3">
+                <div class="col-6"><label class="form-label" asp-for="LeaveForm.StartDate">From</label><input asp-for="LeaveForm.StartDate" type="date" class="form-control" required /></div>
+                <div class="col-6"><label class="form-label" asp-for="LeaveForm.EndDate">To</label><input asp-for="LeaveForm.EndDate" type="date" class="form-control" required /></div>
             </div>
-            <div class="row g-2 mb-2">
-                <div class="col"><label class="form-label small">Start time (optional)</label><input asp-for="LeaveForm.StartTime" type="time" class="form-control form-control-sm" /></div>
-                <div class="col"><label class="form-label small">End time (optional)</label><input asp-for="LeaveForm.EndTime" type="time" class="form-control form-control-sm" /></div>
+            <div class="row g-3 mb-1">
+                <div class="col-6"><label class="form-label" asp-for="LeaveForm.StartTime">Start time <span class="optional">(optional)</span></label><input asp-for="LeaveForm.StartTime" type="time" class="form-control" /></div>
+                <div class="col-6"><label class="form-label" asp-for="LeaveForm.EndTime">End time <span class="optional">(optional)</span></label><input asp-for="LeaveForm.EndTime" type="time" class="form-control" /></div>
             </div>
-            <div class="mb-3"><label class="form-label small">Reason</label><input asp-for="LeaveForm.Reason" class="form-control form-control-sm" /></div>
-            <button class="btn btn-outline-primary btn-sm">Record leave</button>
-            <p class="text-muted small mt-2 mb-0">Leave blank times for full-day leave.</p>
+            <div class="form-text mb-3">Leave both times empty for full-day leave.</div>
+            <label class="form-label" asp-for="LeaveForm.Reason">Reason</label>
+            <input asp-for="LeaveForm.Reason" class="form-control mb-4" placeholder="e.g. Annual leave" />
+            <button class="btn btn-secondary" data-busy-text="Saving...">Record leave</button>
         </form>
     </div>
 </div>

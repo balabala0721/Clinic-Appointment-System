@@ -1,2 +1,121 @@
-@{ ViewData["Title"] = "Dashboard"; }
-<div class="page-header"><h1>Dashboard</h1></div>
+@*
+    Doctor dashboard: today's appointments as a timeline with quick status actions.
+    Status buttons post to Appointments/UpdateStatus (same rules as the appointments page).
+*@
+@inject CurrentUserService Me
+@inject AppointmentService Appointments
+@inject ScheduleService Schedules
+@{
+    ViewData["Title"] = "Today";
+    var doctorId = await Me.GetDoctorIdAsync();
+    var today = ClinicClock.Today;
+    var nowTime = ClinicClock.TimeNow;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+
+    var appts = doctorId == null ? new List<Appointment>()
+              : await Appointments.SearchAsync(today, doctorId, null, null, 1);
+    var active = appts.Where(a => !AppointmentStatus.ReleasesSlot.Contains(a.Status)).ToList();
+    var done = active.Count(a => a.Status == AppointmentStatus.Completed);
+    var waiting = active.Count(a => a.Status == AppointmentStatus.CheckedIn);
+    var remaining = active.Count(a => a.Status is AppointmentStatus.Pending or AppointmentStatus.Confirmed or AppointmentStatus.CheckedIn);
+    // "Now" = the first appointment still to be seen whose time has started or is next
+    var current = active.FirstOrDefault(a => a.Status is AppointmentStatus.Confirmed or AppointmentStatus.CheckedIn && a.EndTime >= nowTime);
+
+    var pendingLeave = doctorId == null ? 0
+                     : (await Schedules.GetLeavesAsync(LeaveStatus.Pending, doctorId)).Count;
+    var name = User.Identity?.Name ?? "";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Good @(nowTime.Hour < 12 ? "morning" : nowTime.Hour < 17 ? "afternoon" : "evening"), @name</h1>
+        <p class="page-subtitle">@Ui.DayDate(today)</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-secondary" asp-controller="DoctorSchedules" asp-action="Mine"><i class="bi bi-calendar-week" aria-hidden="true"></i> My week</a>
+    </div>
+</div>
+
+@if (doctorId == null)
+{
+    <div class="alert alert-warning" role="alert"><i class="bi bi-person-exclamation" aria-hidden="true"></i><div>Your account isn't linked to a doctor profile yet. Please contact the clinic administrator.</div></div>
+}
+
+<div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">Patients today</div><div class="stat-value">@active.Count</div></div>
+    <div class="stat-card"><div class="stat-label">Checked in, waiting</div><div class="stat-value">@waiting</div></div>
+    <div class="stat-card"><div class="stat-label">Still to see</div><div class="stat-value">@remaining</div></div>
+    <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value">@done</div></div>
+</div>
+
+@if (pendingLeave > 0)
+{
+    <div class="alert alert-info" role="status">
+        <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+        <div>@pendingLeave leave @(pendingLeave == 1 ? "request is" : "requests are") waiting for approval. <a asp-controller="DoctorSchedules" asp-action="Mine" asp-fragment="leave">View</a></div>
+    </div>
+}
+
+<section aria-labelledby="today-title">
+    <div class="d-flex justify-content-between align-items-baseline">
+        <h2 class="section-title" id="today-title">Today's appointments</h2>
+        <a class="small" asp-controller="Appointments" asp-action="Doctor">All appointments</a>
+    </div>
+
+    @if (appts.Count == 0)
+    {
+        <div class="card-clean">
+            <div class="empty-state">
+                <div class="empty-icon" aria-hidden="true"><i class="bi bi-cup-hot"></i></div>
+                <div class="empty-title">No appointments today</div>
+                <p class="empty-text">New bookings appear here as soon as patients make them.</p>
+                <a class="btn btn-outline-primary" asp-controller="DoctorSchedules" asp-action="Mine">View my week</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <ol class="timeline">
+            @foreach (var a in appts)
+            {
+                var next = AppointmentStatus.NextFor(a.Status, isDoctor: true);
+                var finished = !AppointmentStatus.Changeable.Contains(a.Status) && a.Status != AppointmentStatus.CheckedIn;
+                var patient = a.Patient?.User.FullName ?? "Patient";
+                <li class="timeline-item @(a == current ? "is-now" : "") @(finished ? "is-done" : "")">
+                    <div class="timeline-time">
+                        @Ui.Time(a.StartTime)
+                        <span class="timeline-end">to @Ui.Time(a.EndTime)</span>
+                    </div>
+                    <div class="timeline-card">
+                        <div class="timeline-main">
+                            <div class="who">@patient @if (a == current) { <span class="visually-hidden">(next)</span> }</div>
+                            <div class="why">@(string.IsNullOrWhiteSpace(a.ReasonForVisit) ? "No reason given" : a.ReasonForVisit)</div>
+                        </div>
+                        @Ui.StatusBadge(a.Status)
+                        @if (next.Length > 0)
+                        {
+                            <form asp-controller="Appointments" asp-action="UpdateStatus" method="post" class="timeline-actions m-0">
+                                <input type="hidden" name="id" value="@a.AppointmentId" />
+                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                @if (next.Contains(AppointmentStatus.Completed))
+                                {
+                                    <button name="status" value="@AppointmentStatus.Completed" class="btn btn-primary btn-sm" data-busy-text="Saving...">
+                                        <i class="bi bi-check2" aria-hidden="true"></i> Completed
+                                    </button>
+                                }
+                                @if (next.Contains(AppointmentStatus.NoShow))
+                                {
+                                    <button name="status" value="@AppointmentStatus.NoShow" class="btn btn-outline-danger btn-sm"
+                                            data-confirm="@patient will be marked as not attending the @Ui.Time(a.StartTime) appointment. This can't be undone."
+                                            data-confirm-title="Mark as no-show?" data-confirm-ok="Mark no-show">
+                                        No-show
+                                    </button>
+                                }
+                            </form>
+                        }
+                    </div>
+                </li>
+            }
+        </ol>
+    }
+</section>

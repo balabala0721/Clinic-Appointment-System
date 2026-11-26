@@ -1,73 +1,102 @@
 @model ScheduleIndexViewModel
+@* Doctor schedules overview. Admin: manage; Staff: view only. *@
 @{
     ViewData["Title"] = "Doctor schedules";
-    var isAdmin = User.IsInRole(Roles.Admin);   // staff: view only
+    var isAdmin = User.IsInRole(Roles.Admin);
+    var filtered = Model.SpecialisationId.HasValue || !string.IsNullOrEmpty(Model.Search);
 }
 
-<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-    <h1 class="h4 mb-0">Doctor schedules</h1>
-    <div class="d-flex gap-2">
-        @if (isAdmin)
-        {
-            <a asp-action="Leaves" class="btn btn-outline-secondary btn-sm">
-                Leave requests @if (Model.PendingLeaveCount > 0) { <span class="badge bg-warning text-dark">@Model.PendingLeaveCount</span> }
-            </a>
-        }
-        <a asp-action="Conflicts" class="btn btn-sm @(Model.ConflictCount > 0 ? "btn-danger" : "btn-outline-secondary")">
-            Conflicts @if (Model.ConflictCount > 0) { <span class="badge bg-light text-dark">@Model.ConflictCount</span> }
-        </a>
+<div class="page-header">
+    <div>
+        <h1>Doctor schedules</h1>
+        <p class="page-subtitle">@(isAdmin ? "Working hours for every doctor. Open a doctor to change their timetable or record leave." : "Working hours for every doctor.")</p>
     </div>
+    @if (isAdmin)
+    {
+        <div class="page-actions">
+            <a asp-action="Leaves" class="btn btn-secondary">
+                <i class="bi bi-airplane" aria-hidden="true"></i> Leave requests
+                @if (Model.PendingLeaveCount > 0) { <span class="status-badge status-pending">@Model.PendingLeaveCount waiting</span> }
+            </a>
+        </div>
+    }
 </div>
 
-<form method="get" class="card-clean row g-2 align-items-end mb-4">
-    <div class="col-md-5">
-        <label class="form-label small">Specialisation</label>
-        <select name="specialisationId" class="form-select form-select-sm">
-            <option value="">All</option>
+@if (Model.ConflictCount > 0)
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+        <div>
+            <strong>@Model.ConflictCount booked @(Model.ConflictCount == 1 ? "appointment no longer fits" : "appointments no longer fit")</strong> a doctor's schedule or leave.
+            <a asp-action="Conflicts">Review conflicts</a>
+        </div>
+    </div>
+}
+
+<form method="get" class="card-clean filter-bar" role="search" aria-label="Filter doctors">
+    <div class="filter-field">
+        <label class="form-label" for="f-spec">Specialisation</label>
+        <select id="f-spec" name="specialisationId" class="form-select">
+            <option value="">All specialisations</option>
             @foreach (var s in Model.Specialisations)
             {
                 <option value="@s.SpecialisationId" selected="@(s.SpecialisationId == Model.SpecialisationId)">@s.Name</option>
             }
         </select>
     </div>
-    <div class="col-md-5">
-        <label class="form-label small">Doctor name</label>
-        <input name="search" value="@Model.Search" class="form-control form-control-sm" />
+    <div class="filter-field is-wide">
+        <label class="form-label" for="f-search">Doctor name</label>
+        <input id="f-search" name="search" value="@Model.Search" class="form-control" placeholder="e.g. Tan" />
     </div>
-    <div class="col-md-2"><button class="btn btn-primary btn-sm w-100">Filter</button></div>
+    <div class="filter-actions">
+        <button class="btn btn-primary">Apply</button>
+        @if (filtered) { <a class="btn btn-secondary" asp-action="Index">Clear</a> }
+    </div>
 </form>
 
-<div class="card-clean">
-    <table class="table table-sm align-middle mb-0">
-        <thead><tr><th>Doctor</th><th>Specialisation</th><th>Working days</th><th></th></tr></thead>
-        <tbody>
-            @foreach (var row in Model.Rows)
-            {
-                <tr>
-                    <td>@row.Doctor.User.FullName</td>
-                    <td>@row.Doctor.Specialisation?.Name</td>
-                    <td class="small">
-                        @if (row.Schedules.Count == 0)
-                        {
-                            <span class="text-danger">No schedule set</span>
-                        }
-                        @foreach (var s in row.Schedules)
-                        {
-                            <div>@(((System.DayOfWeek)s.DayOfWeek).ToString()[..3]) @s.StartTime.ToString("HH:mm")-@s.EndTime.ToString("HH:mm")</div>
-                        }
-                    </td>
-                    <td class="text-end">
-                        @if (isAdmin)
-                        {
-                            <a asp-action="Edit" asp-route-doctorId="@row.Doctor.DoctorId" class="btn btn-outline-primary btn-sm">Manage</a>
-                        }
-                        else
-                        {
-                            <a asp-action="Doctor" asp-route-id="@row.Doctor.DoctorId" class="btn btn-outline-secondary btn-sm">View</a>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+<div class="card-clean @(Model.Rows.Count > 0 ? "card-table" : "")">
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="empty-state">
+            <div class="empty-icon" aria-hidden="true"><i class="bi bi-person-badge"></i></div>
+            <div class="empty-title">No doctors match</div>
+            <p class="empty-text">Try another name or specialisation.</p>
+            @if (filtered) { <a class="btn btn-outline-primary" asp-action="Index">Clear filters</a> }
+        </div>
+    }
+    else
+    {
+        <table class="table table-stack">
+            <thead><tr><th scope="col">Doctor</th><th scope="col">Specialisation</th><th scope="col">Working days</th><th scope="col" class="actions"><span class="visually-hidden">Actions</span></th></tr></thead>
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <td data-label="Doctor"><strong>@row.Doctor.User.FullName</strong></td>
+                        <td data-label="Specialisation">@row.Doctor.Specialisation?.Name</td>
+                        <td data-label="Working days" class="small">
+                            @if (row.Schedules.Count == 0)
+                            {
+                                <span class="status-badge status-noshow">No schedule set</span>
+                            }
+                            @foreach (var s in row.Schedules)
+                            {
+                                <div>@Ui.DayName(s.DayOfWeek, shortName: true) &middot; @Ui.TimeRange(s.StartTime, s.EndTime)</div>
+                            }
+                        </td>
+                        <td class="actions">
+                            @if (isAdmin)
+                            {
+                                <a asp-action="Edit" asp-route-doctorId="@row.Doctor.DoctorId" class="btn btn-secondary btn-sm" aria-label="Manage schedule for @row.Doctor.User.FullName">Manage</a>
+                            }
+                            else
+                            {
+                                <a asp-action="Doctor" asp-route-id="@row.Doctor.DoctorId" class="btn btn-secondary btn-sm" aria-label="View week for @row.Doctor.User.FullName">View week</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
 </div>

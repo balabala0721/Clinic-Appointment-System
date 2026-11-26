@@ -1,45 +1,59 @@
 @model List<DoctorLeave>
+@* Admin leave review queue. Reject asks for confirmation (data-confirm, handled by clinic.js). *@
 @{
     ViewData["Title"] = "Leave requests";
     var current = Context.Request.Query["status"].ToString();
     if (string.IsNullOrEmpty(current)) current = LeaveStatus.Pending;
 }
 
-<a asp-action="Index" class="small">&larr; All schedules</a>
-<div class="d-flex justify-content-between align-items-center mt-2 mb-3">
-    <h1 class="h4 mb-0">Leave requests</h1>
-    <div class="btn-group btn-group-sm">
-        @foreach (var s in new[] { LeaveStatus.Pending, LeaveStatus.Approved, LeaveStatus.Rejected })
-        {
-            <a asp-action="Leaves" asp-route-status="@s" class="btn @(s == current ? "btn-primary" : "btn-outline-primary")">@s</a>
-        }
+<a asp-action="Index" class="back-link"><i class="bi bi-arrow-left" aria-hidden="true"></i> Doctor schedules</a>
+<div class="page-header">
+    <div>
+        <h1>Leave requests</h1>
+        <p class="page-subtitle">Approving leave blocks those times. Patients already booked then show up under Conflicts.</p>
     </div>
 </div>
 
-<div class="card-clean">
+<nav class="tabs" aria-label="Filter by status">
+    @foreach (var s in new[] { LeaveStatus.Pending, LeaveStatus.Approved, LeaveStatus.Rejected })
+    {
+        <a asp-action="Leaves" asp-route-status="@s" class="tab @(s == current ? "active" : "")" aria-current="@(s == current ? "page" : null)">@s</a>
+    }
+</nav>
+
+<div class="card-clean @(Model.Count > 0 ? "card-table" : "")">
     @if (Model.Count == 0)
     {
-        <p class="text-muted mb-0">No @current.ToLower() requests.</p>
+        <div class="empty-state">
+            <div class="empty-icon" aria-hidden="true"><i class="bi @(current == LeaveStatus.Pending ? "bi-check2-all" : "bi-inbox")"></i></div>
+            <div class="empty-title">@(current == LeaveStatus.Pending ? "Nothing to review" : $"No {current.ToLower()} requests")</div>
+            <p class="empty-text mb-0">@(current == LeaveStatus.Pending ? "New requests from doctors will appear here." : "Requests move here once they are reviewed.")</p>
+        </div>
     }
     else
     {
-        <table class="table table-sm align-middle mb-0">
-            <thead><tr><th>Doctor</th><th>Dates</th><th>Time</th><th>Reason</th><th></th></tr></thead>
+        <table class="table table-stack">
+            <thead><tr><th scope="col">Doctor</th><th scope="col">Dates</th><th scope="col">Time</th><th scope="col">Reason</th><th scope="col">Status</th><th scope="col" class="actions"><span class="visually-hidden">Actions</span></th></tr></thead>
             <tbody>
                 @foreach (var l in Model)
                 {
+                    var dates = Ui.Date(l.StartDate) + (l.EndDate != l.StartDate ? " – " + Ui.Date(l.EndDate) : "");
+                    var doctorName = l.Doctor?.User.FullName ?? "The doctor";
                     <tr>
-                        <td>@l.Doctor?.User.FullName</td>
-                        <td>@l.StartDate.ToString("d MMM yyyy") @(l.EndDate != l.StartDate ? "- " + l.EndDate.ToString("d MMM yyyy") : "")</td>
-                        <td>@(l.IsWholeDay ? "Full day" : $"{l.StartTime:HH:mm}-{l.EndTime:HH:mm}")</td>
-                        <td>@l.Reason</td>
-                        <td class="text-end text-nowrap">
+                        <td data-label="Doctor"><strong>@doctorName</strong></td>
+                        <td data-label="Dates">@dates</td>
+                        <td data-label="Time">@(l.IsWholeDay ? "Full day" : $"{Ui.Time(l.StartTime)} – {Ui.Time(l.EndTime)}")</td>
+                        <td data-label="Reason">@(string.IsNullOrWhiteSpace(l.Reason) ? "-" : l.Reason)</td>
+                        <td data-label="Status">@Ui.StatusBadge(l.Status)</td>
+                        <td class="actions">
                             @if (l.Status == LeaveStatus.Pending)
                             {
-                                <form asp-action="ReviewLeave" method="post" class="d-inline">
+                                <form asp-action="ReviewLeave" method="post" class="d-inline-flex gap-2 m-0">
                                     <input type="hidden" name="leaveId" value="@l.LeaveId" />
-                                    <button name="approve" value="true" class="btn btn-success btn-sm">Approve</button>
-                                    <button name="approve" value="false" class="btn btn-outline-danger btn-sm">Reject</button>
+                                    <button name="approve" value="true" class="btn btn-primary btn-sm" data-busy-text="Approving...">Approve</button>
+                                    <button name="approve" value="false" class="btn btn-outline-danger btn-sm"
+                                            data-confirm="The leave request from @doctorName for @dates will be rejected. The doctor will see it as Rejected."
+                                            data-confirm-title="Reject this leave request?" data-confirm-ok="Reject request">Reject</button>
                                 </form>
                             }
                         </td>

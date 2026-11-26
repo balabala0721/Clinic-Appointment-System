@@ -29,10 +29,17 @@ $(function () {
     $('#sc-close').on('click', function () { setOpen(false, true); });
 
     $('#sc-clear').on('click', function () {
-        if (!confirm('Start a new chat? This conversation will be cleared.')) return;
-        state.items = [];
-        addItem({ kind: 'msg', role: 'model', text: WELCOME });
-        renderAll();
+        Clinic.confirm({
+            title: 'Start a new chat?',
+            message: 'This conversation will be cleared from this browser tab. Your appointments are not affected.',
+            confirmText: 'Start new chat',
+            cancelText: 'Keep chatting',
+            danger: false
+        }).then(function () {
+            state.items = [];
+            addItem({ kind: 'msg', role: 'model', text: WELCOME });
+            renderAll();
+        });
     });
 
     $('.sc-chip').on('click', function () { send($(this).text()); });

@@ -1,101 +1,147 @@
 @model ManageAppointmentsViewModel
+@*
+    Admin / staff appointment management: filters, status actions, reschedule.
+    JS (wwwroot/js/manage-appointments.js) hooks: .js-reschedule[data-id], .reschedule-row[data-id][data-doctor],
+    .js-new-date, .js-new-slots, .js-confirm-reschedule, .js-msg.
+*@
 @{
     ViewData["Title"] = "Appointments";
     var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    var filtered = Model.Date.HasValue || Model.DoctorId.HasValue || !string.IsNullOrEmpty(Model.PatientName) || !string.IsNullOrEmpty(Model.Status);
+
+    // Button text + style for each status change. Cancel / No-show are destructive -> confirmation.
+    (string Text, string Css, bool Danger) StatusAction(string s) => s switch
+    {
+        AppointmentStatus.Confirmed => ("Confirm", "btn-secondary", false),
+        AppointmentStatus.CheckedIn => ("Check in", "btn-primary", false),
+        AppointmentStatus.Completed => ("Complete", "btn-secondary", false),
+        AppointmentStatus.Cancelled => ("Cancel", "btn-outline-danger", true),
+        AppointmentStatus.NoShow => ("No-show", "btn-outline-danger", true),
+        _ => (s, "btn-secondary", false)
+    };
 }
 
-<h1 class="h4 mb-3">Appointments</h1>
-
-<form method="get" class="card-clean row g-2 align-items-end mb-4">
-    <div class="col-md-3">
-        <label class="form-label small">Date</label>
-        <input type="date" name="date" value="@Model.Date?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+<div class="page-header">
+    <div>
+        <h1>Appointments</h1>
+        <p class="page-subtitle">Search, update status and reschedule for patients.</p>
     </div>
-    <div class="col-md-3">
-        <label class="form-label small">Doctor</label>
-        <select name="doctorId" class="form-select form-select-sm">
-            <option value="">All</option>
+</div>
+
+<form method="get" class="card-clean filter-bar" role="search" aria-label="Filter appointments">
+    <div class="filter-field">
+        <label class="form-label" for="f-date">Date</label>
+        <input id="f-date" type="date" name="date" value="@Model.Date?.ToString("yyyy-MM-dd")" class="form-control" />
+    </div>
+    <div class="filter-field">
+        <label class="form-label" for="f-doctor">Doctor</label>
+        <select id="f-doctor" name="doctorId" class="form-select">
+            <option value="">All doctors</option>
             @foreach (var d in Model.Doctors)
             {
                 <option value="@d.DoctorId" selected="@(d.DoctorId == Model.DoctorId)">@d.User.FullName</option>
             }
         </select>
     </div>
-    <div class="col-md-3">
-        <label class="form-label small">Patient name</label>
-        <input name="patientName" value="@Model.PatientName" class="form-control form-control-sm" />
+    <div class="filter-field">
+        <label class="form-label" for="f-patient">Patient name</label>
+        <input id="f-patient" name="patientName" value="@Model.PatientName" class="form-control" placeholder="e.g. Ali" />
     </div>
-    <div class="col-md-2">
-        <label class="form-label small">Status</label>
-        <select name="status" class="form-select form-select-sm">
-            <option value="">All</option>
+    <div class="filter-field">
+        <label class="form-label" for="f-status">Status</label>
+        <select id="f-status" name="status" class="form-select">
+            <option value="">All statuses</option>
             @foreach (var s in AppointmentStatus.All)
             {
-                <option value="@s" selected="@(s == Model.Status)">@s</option>
+                <option value="@s" selected="@(s == Model.Status)">@Ui.StatusLabel(s)</option>
             }
         </select>
     </div>
-    <div class="col-md-1">
-        <button class="btn btn-primary btn-sm w-100">Filter</button>
+    <div class="filter-actions">
+        <button class="btn btn-primary">Apply</button>
+        @if (filtered)
+        {
+            <a class="btn btn-secondary" asp-action="Manage">Clear</a>
+        }
     </div>
 </form>
 
-<div class="card-clean">
+<div class="card-clean @(Model.Appointments.Count > 0 ? "card-table" : "")">
     @if (Model.Appointments.Count == 0)
     {
-        <p class="text-muted mb-0">No appointments match these filters.</p>
+        <div class="empty-state">
+            <div class="empty-icon" aria-hidden="true"><i class="bi bi-search"></i></div>
+            <div class="empty-title">No appointments match these filters</div>
+            <p class="empty-text">Try a different date or clear the filters.</p>
+            @if (filtered) { <a class="btn btn-outline-primary" asp-action="Manage">Clear filters</a> }
+        </div>
     }
     else
     {
-        <table class="table table-sm align-middle mb-0">
+        <table class="table table-stack">
             <thead>
-                <tr><th>Date</th><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th><th></th></tr>
+                <tr><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Patient</th><th scope="col">Doctor</th><th scope="col">Status</th><th scope="col" class="actions"><span class="visually-hidden">Actions</span></th></tr>
             </thead>
             <tbody>
                 @foreach (var a in Model.Appointments)
                 {
                     var next = AppointmentStatus.AllowedTransitions[a.Status];
                     var canReschedule = AppointmentStatus.Changeable.Contains(a.Status) && a.StartsAt > ClinicClock.Now;
+                    var patient = a.Patient?.User.FullName ?? "Patient";
+                    var when = $"{Ui.Date(a.AppointmentDate)} at {Ui.Time(a.StartTime)}";
                     <tr>
-                        <td>@a.AppointmentDate.ToString("d MMM yyyy")</td>
-                        <td>@a.StartTime.ToString("HH:mm")</td>
-                        <td>@a.Patient?.User.FullName</td>
-                        <td>@a.Doctor?.User.FullName</td>
-                        <td>@a.Status</td>
-                        <td class="text-end">
-                            @if (next.Length > 0)
-                            {
-                                <form asp-action="UpdateStatus" method="post" class="d-inline-flex gap-1">
-                                    <input type="hidden" name="id" value="@a.AppointmentId" />
-                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
-                                    <select name="status" class="form-select form-select-sm" style="width: auto">
+                        <td data-label="Date">@Ui.Date(a.AppointmentDate)</td>
+                        <td data-label="Time">@Ui.Time(a.StartTime)</td>
+                        <td data-label="Patient">@patient</td>
+                        <td data-label="Doctor">@a.Doctor?.User.FullName</td>
+                        <td data-label="Status">@Ui.StatusBadge(a.Status)</td>
+                        <td class="actions">
+                            <div class="d-inline-flex flex-wrap gap-2 justify-content-end">
+                                @if (next.Length > 0)
+                                {
+                                    <form asp-action="UpdateStatus" method="post" class="d-inline-flex flex-wrap gap-2 m-0">
+                                        <input type="hidden" name="id" value="@a.AppointmentId" />
+                                        <input type="hidden" name="returnUrl" value="@returnUrl" />
                                         @foreach (var s in next)
                                         {
-                                            <option value="@s">@s</option>
+                                            var act = StatusAction(s);
+                                            if (act.Danger)
+                                            {
+                                                <button name="status" value="@s" class="btn @act.Css btn-sm"
+                                                        data-confirm="@(s == AppointmentStatus.Cancelled
+                                                            ? $"{patient}'s appointment on {when} will be cancelled and the time released for others. This can't be undone."
+                                                            : $"{patient} will be marked as not attending on {when}. This can't be undone.")"
+                                                        data-confirm-title="@(s == AppointmentStatus.Cancelled ? "Cancel this appointment?" : "Mark as no-show?")"
+                                                        data-confirm-ok="@(s == AppointmentStatus.Cancelled ? "Cancel appointment" : "Mark no-show")">@act.Text</button>
+                                            }
+                                            else
+                                            {
+                                                <button name="status" value="@s" class="btn @act.Css btn-sm">@act.Text</button>
+                                            }
                                         }
-                                    </select>
-                                    <button class="btn btn-outline-primary btn-sm">Update</button>
-                                </form>
-                            }
-                            @if (canReschedule)
-                            {
-                                <button type="button" class="btn btn-link btn-sm js-reschedule"
-                                        data-id="@a.AppointmentId" data-doctor="@a.DoctorId">Reschedule</button>
-                            }
+                                    </form>
+                                }
+                                @if (canReschedule)
+                                {
+                                    <button type="button" class="btn btn-link btn-sm js-reschedule" aria-expanded="false"
+                                            data-id="@a.AppointmentId" data-doctor="@a.DoctorId">Reschedule</button>
+                                }
+                            </div>
                         </td>
                     </tr>
                     @if (canReschedule)
                     {
-                        @* Hidden panel opened by manage-appointments.js - same doctor, new date/time *@
+                        @* Hidden row opened by manage-appointments.js - same doctor, new date/time *@
                         <tr class="reschedule-row d-none" data-id="@a.AppointmentId" data-doctor="@a.DoctorId">
-                            <td colspan="6" class="bg-light">
-                                <div class="d-flex flex-wrap align-items-center gap-2 py-1">
-                                    <span class="small text-muted">New time with @a.Doctor?.User.FullName:</span>
-                                    <input type="date" class="form-control form-control-sm js-new-date" style="width: auto"
+                            <td colspan="6">
+                                <div class="py-2">
+                                    <label class="form-label" for="new-date-@a.AppointmentId">New date for @patient with @a.Doctor?.User.FullName</label>
+                                    <input id="new-date-@a.AppointmentId" type="date" class="form-control mb-3 js-new-date field-narrow"
                                            min="@ClinicClock.Today.ToString("yyyy-MM-dd")"
                                            max="@ClinicClock.Today.AddDays(ClinicSettings.MaxBookingDaysAhead).ToString("yyyy-MM-dd")" />
-                                    <div class="slot-grid js-new-slots"></div>
-                                    <button type="button" class="btn btn-primary btn-sm js-confirm-reschedule" disabled>Confirm</button>
+                                    <div class="slot-grid is-compact mb-3 js-new-slots" aria-live="polite"></div>
+                                    <button type="button" class="btn btn-primary btn-sm js-confirm-reschedule" data-busy-text="Saving..." disabled>Confirm new time</button>
+                                    <div class="inline-msg js-msg" aria-live="assertive"></div>
                                 </div>
                             </td>
                         </tr>
@@ -105,19 +151,7 @@
         </table>
     }
 
-    <div class="d-flex justify-content-between mt-3">
-        @if (Model.Page > 1)
-        {
-            <a class="btn btn-link btn-sm" asp-route-page="@(Model.Page - 1)" asp-route-date="@Model.Date?.ToString("yyyy-MM-dd")"
-               asp-route-doctorId="@Model.DoctorId" asp-route-patientName="@Model.PatientName" asp-route-status="@Model.Status">Previous</a>
-        }
-        else { <span></span> }
-        @if (Model.Appointments.Count == ClinicSettings.AdminPageSize)
-        {
-            <a class="btn btn-link btn-sm" asp-route-page="@(Model.Page + 1)" asp-route-date="@Model.Date?.ToString("yyyy-MM-dd")"
-               asp-route-doctorId="@Model.DoctorId" asp-route-patientName="@Model.PatientName" asp-route-status="@Model.Status">Next</a>
-        }
-    </div>
+    <partial name="_Pager" model="@(new PagerModel(Model.Page, Model.Appointments.Count == ClinicSettings.AdminPageSize))" />
 </div>
 
 @section Scripts {
