@@ -1,0 +1,36 @@
+﻿@model ClinicSystem.Models.Account.Patient
+
+<div class="container">
+    <h2 class="fw-semibold mb-1">Profile</h2>
+    <p class="text-body-secondary mb-4">View your profile information below.</p>
+    <div class="card shadow-sm border rounded-3 mb-4">
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Full Name</label>
+                    <p class="form-control-plaintext">@Model.User.FullName</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Email</label>
+                    <p class="form-control-plaintext">@Model.User.Email</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">ID Type</label>
+                    <p class="form-control-plaintext">@Model.IdType</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">ID Number</label>
+                    <p class="form-control-plaintext">@Model.IdNumber</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Nationality</label>
+                    <p class="form-control-plaintext">@Model.Nationality</p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Gender</label>
+                    <p class="form-control-plaintext">@Model.Gender</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

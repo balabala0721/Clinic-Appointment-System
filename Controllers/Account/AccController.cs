@@ -84,7 +84,7 @@ namespace ClinicSystem.Controllers.Account
         public async Task<IActionResult> Login(AccLoginVM vm)
         {
             // Validate the input model
-            var user = context.Users.FirstOrDefault(u => u.Email == vm.Email);
+            var user =  await context.Users.FirstOrDefaultAsync(u => u.Email == vm.Email);
             var hasher = new PasswordHasher<User>();
 
             if (user == null)
@@ -107,25 +107,27 @@ namespace ClinicSystem.Controllers.Account
                 
 
             var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-        new Claim(ClaimTypes.Name, user.FullName),
-        new Claim(ClaimTypes.Email, user.Email),
-        new Claim(ClaimTypes.Role, user.Role.ToString())
-    };
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.Name, user.FullName),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role.ToString())
+            };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-            return user.Role switch
+            /* return user.Role switch
             {
                 Role.Admin => RedirectToAction("Index", "AdminAcc"),
                 Role.Doctor => RedirectToAction("Index", "DoctorAcc"),
                 Role.Patient => RedirectToAction("Index", "PatientAcc"),
-                _ => View(vm)
-            };
+                _ => View(vm
+            }; */
+
+            return View("~/Views/Shared/_MainMenu.cshtml");
         }
     }
 }
