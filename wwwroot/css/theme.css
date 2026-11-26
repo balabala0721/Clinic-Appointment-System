@@ -18,6 +18,8 @@
      8. Responsive + print
 
    Rule: no colour, size or shadow literals below section 1. Use var(--...).
+   (Only small component geometry stays inline: 1-2px hairlines/offsets and
+   icon-box sizes that belong to one component.)
    ============================================================================= */
 
 
@@ -73,6 +75,9 @@
 
     --color-overlay:         rgba(16, 24, 40, .45);   /* modal / off-canvas backdrop */
     --color-focus:           #0f766e;                 /* keyboard focus outline */
+    --color-on-primary-hover: rgba(255, 255, 255, .15); /* icon buttons on the teal chat header */
+    --focus-ring:            0 0 0 3px rgba(var(--color-primary-rgb), .18);  /* focused inputs */
+    --focus-ring-danger:     0 0 0 3px rgba(var(--color-danger-rgb), .18);   /* focused invalid inputs */
 
     /* Typography */
     --font-family:   system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -114,6 +119,10 @@
     --width-narrow:   46rem;     /* single-column pages (find a doctor) */
     --width-dialog:   34rem;     /* centred cards (login, errors) */
     --width-field:    16rem;     /* short inputs (dates, numbers) */
+    --width-auth:     720px;     /* signed-out pages (login, register) */
+    --chart-height:   260px;     /* admin overview charts */
+    --chat-width:     370px;     /* support chat panel on desktop */
+    --chat-height:    540px;
     --tap-size:       44px;      /* minimum touch target */
     --chat-clearance: 96px;      /* space kept free at the bottom for the chat button */
 
@@ -400,7 +409,7 @@ a:hover { color: var(--color-primary-hover); }
     padding: var(--space-6) var(--space-4);
 }
 .auth-shell .brand { margin-bottom: var(--space-5); font-size: var(--text-lg); }
-.auth-content { width: 100%; max-width: 720px; }
+.auth-content { width: 100%; max-width: var(--width-auth); }
 
 /* Page header: title + optional subtitle on the left, one primary action right */
 .page-header {
@@ -742,10 +751,10 @@ textarea.form-control { min-height: auto; }
 .form-control::placeholder { color: var(--color-text-subtle); opacity: 1; }
 .form-control:focus, .form-select:focus {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), .18);
+    box-shadow: var(--focus-ring);
 }
 .form-check-input:checked { background-color: var(--color-primary); border-color: var(--color-primary); }
-.form-check-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), .18); }
+.form-check-input:focus { border-color: var(--color-primary); box-shadow: var(--focus-ring); }
 .form-text { color: var(--color-text-muted); font-size: var(--text-sm); }
 
 /* Validation - Bootstrap classes and ASP.NET unobtrusive classes look the same */
@@ -755,7 +764,7 @@ textarea.form-control { min-height: auto; }
 }
 .validation-summary-errors ul { margin: 0; padding-left: var(--space-4); }
 .input-validation-error, .form-control.is-invalid, .form-select.is-invalid { border-color: var(--color-danger) !important; }
-.input-validation-error:focus { box-shadow: 0 0 0 3px rgba(var(--color-danger-rgb), .18); }
+.input-validation-error:focus { box-shadow: var(--focus-ring-danger); }
 
 /* Filter bar above tables */
 .filter-bar {
@@ -1206,6 +1215,7 @@ textarea.form-control { min-height: auto; }
 .date-badge .mon { font-size: var(--text-xs); color: var(--color-text-muted); text-transform: uppercase; }
 
 /* ---- Weekly schedule grid ---- */
+.week-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-4); }
 .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--space-2); }
 .week-day {
     background: var(--color-surface);
@@ -1237,7 +1247,7 @@ textarea.form-control { min-height: auto; }
 }
 
 /* ---- Charts ---- */
-.chart-box { position: relative; height: 260px; }
+.chart-box { position: relative; height: var(--chart-height); }
 
 /* ---- AI support chat (floating) ---- */
 .chat-msg {
@@ -1298,8 +1308,8 @@ textarea.form-control { min-height: auto; }
     position: fixed;
     right: var(--space-5);
     bottom: calc(var(--space-5) + 68px);
-    width: 370px;
-    height: 540px;
+    width: var(--chat-width);
+    height: var(--chat-height);
     max-height: calc(100vh - 120px);
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -1329,7 +1339,7 @@ textarea.form-control { min-height: auto; }
     border-radius: var(--radius-sm);
     font-size: var(--text-base);
 }
-.sc-icon-btn:hover { background: rgba(255, 255, 255, .15); }
+.sc-icon-btn:hover { background: var(--color-on-primary-hover); }
 .sc-icon-btn:focus-visible { outline-color: var(--color-on-primary); }
 .sc-log {
     flex: 1;
@@ -1384,6 +1394,11 @@ body.has-chat .app-content { padding-bottom: calc(var(--space-7) + var(--chat-cl
 .app-content > .container > .d-flex:first-child h2 { font-size: var(--text-xl); margin-bottom: var(--space-4); }
 .app-content dl.row dt { font-weight: var(--weight-medium); color: var(--color-text-muted); }
 .app-content hr { border-color: var(--color-border); opacity: 1; }
+/* Their title row (h2 + buttons in a .d-flex) wraps instead of overlapping on phones */
+.app-content > .container > .d-flex:first-child { flex-wrap: wrap; gap: var(--space-3); }
+.app-content > .container > .d-flex:first-child h2 { margin-bottom: 0; }
+.app-content > .container > .d-flex:first-child > div { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.app-content > .container > .d-flex:first-child > div > .btn { margin: 0 !important; }
 
 
 /* -----------------------------------------------------------------------------
@@ -1401,6 +1416,9 @@ body.has-chat .app-content { padding-bottom: calc(var(--space-7) + var(--chat-cl
 @media (max-width: 767.98px) {       /* --bp-md */
     .week-grid { grid-template-columns: 1fr; }
     .week-day { min-height: auto; }
+    .week-nav { flex-wrap: wrap; }
+    .week-nav .week-range { order: -1; flex-basis: 100%; text-align: center; }
+    .week-nav .btn { flex: 1 1 0; }
     .page-header .page-actions { width: 100%; }
     .page-header .page-actions > .btn-primary { flex: 1 1 auto; }
     .timeline-item { grid-template-columns: 64px 1fr; gap: var(--space-2); }
@@ -1432,8 +1450,12 @@ body.has-chat .app-content { padding-bottom: calc(var(--space-7) + var(--chat-cl
 }
 @media (max-width: 575.98px) {       /* --bp-sm */
     .stepper .step-name { display: none; }
-    .stepper li.is-current .step-name { display: block; }
+    /* Phones: bars only, with the current step's full name underneath */
+    .stepper { position: relative; padding-bottom: calc(var(--text-sm) * var(--line-height) + var(--space-2)); }
+    .stepper li.is-current .step-name { display: block; position: absolute; left: 0; bottom: 0; overflow: visible; }
     .choice-grid { grid-template-columns: 1fr; }
+    .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+    .stat-card { padding: var(--space-3) var(--space-4); }
     .toast-stack { top: auto; bottom: var(--space-4); right: var(--space-4); left: var(--space-4); width: auto; }
     body.has-chat .toast-stack { bottom: calc(var(--space-4) + var(--chat-clearance)); }
     .sc-toggle { right: var(--space-4); bottom: var(--space-4); }

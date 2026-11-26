@@ -32,11 +32,11 @@
     </div>
 </div>
 
-<nav class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3" aria-label="Week">
+<nav class="week-nav" aria-label="Week">
     <a class="btn btn-secondary btn-sm" asp-action="@action" asp-route-id="@routeId" asp-route-week="@Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd")">
         <i class="bi bi-chevron-left" aria-hidden="true"></i> Previous week
     </a>
-    <strong>@Ui.Date(Model.WeekStart) – @Ui.Date(weekEnd)</strong>
+    <strong class="week-range">@Ui.Date(Model.WeekStart) – @Ui.Date(weekEnd)</strong>
     <a class="btn btn-secondary btn-sm" asp-action="@action" asp-route-id="@routeId" asp-route-week="@Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd")">
         Next week <i class="bi bi-chevron-right" aria-hidden="true"></i>
     </a>
@@ -99,7 +99,7 @@
 {
     <section id="leave" aria-labelledby="leave-title" class="row g-4">
         <div class="col-lg-5">
-            <form asp-action="RequestLeave" method="post" class="card-clean">
+            <form asp-action="RequestLeave" method="post" class="card-clean" data-keep-input="my-leave">
                 <h2 class="section-title" id="leave-title">Request leave</h2>
                 <p class="text-muted small">The clinic admin reviews each request. Patients already booked will be contacted if it's approved.</p>
                 <div class="row g-3 mb-3">

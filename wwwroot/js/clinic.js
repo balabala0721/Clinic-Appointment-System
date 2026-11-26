@@ -223,6 +223,12 @@ const Clinic = {
 // Page-wide behaviour for normal (non-AJAX) forms
 // --------------------------------------------------------------------------
 $(function () {
+    // Decorative icons (e.g. on teammates' pages) are hidden from screen readers when the
+    // parent already has visible text. Icon-only controls must carry their own aria-label.
+    $('i.bi:not([aria-hidden])').each(function () {
+        if ($.trim($(this).parent().text()).length > 0) this.setAttribute('aria-hidden', 'true');
+    });
+
     // Confirmation for destructive form posts: <button data-confirm="..."> or <form data-confirm="...">
     $(document).on('submit', 'form', function (e) {
         const form = this;
@@ -253,6 +259,27 @@ $(function () {
             const $btn = submitter ? $(submitter) : $(form).find('button[type="submit"], button:not([type])').first();
             if ($btn.length && !$btn.is('[data-no-busy]')) Clinic.busy($btn, true, $btn.data('busyText') || 'Please wait...');
         }, 0);
+    });
+
+    // Keep the user's input when the server redirects back with an error.
+    // <form data-keep-input="unique-key">: values are saved on submit and put back only if
+    // the next page shows a server error (_Alerts renders [data-server-error]).
+    // Anti-forgery tokens and hidden fields are never stored.
+    const KEEP = 'clinic:keep:';
+    $(document).on('submit', 'form[data-keep-input]', function () {
+        const values = $(this).find('input:not([type=hidden]):not([type=password]), select, textarea').serializeArray();
+        try { sessionStorage.setItem(KEEP + this.getAttribute('data-keep-input'), JSON.stringify(values)); } catch (e) { /* storage blocked */ }
+    });
+    const hadError = $('[data-server-error]').length > 0;
+    $('form[data-keep-input]').each(function () {
+        const key = KEEP + this.getAttribute('data-keep-input');
+        let saved = null;
+        try { saved = sessionStorage.getItem(key); sessionStorage.removeItem(key); } catch (e) { /* storage blocked */ }
+        if (!saved || !hadError) return;
+        const form = this;
+        JSON.parse(saved).forEach(function (f) {
+            $(form.elements[f.name]).val(f.value);
+        });
     });
 
     // Coming back with the browser's Back button must not leave buttons spinning

@@ -66,3 +66,34 @@ All existing scripts already write user/AI text with `.text()` – keep it that 
 4. **Role screens** – Patient dashboard, step-by-step booking, My Appointments tabs; Doctor dashboard timeline, schedule week, leave; Staff front desk; Admin overview with charts, management tables, leave review queue.
 5. **Interaction pass + teammate pages** – loading/toast/inline errors on every AJAX action, confirm modals, empty states, form labels/placeholders, focus styles, ARIA; teammate pages restyled mostly through CSS.
 6. **Verify** – `dotnet build`, every page per role at 1280px and 375px, fix, push `ui-redesign`.
+
+## 4. Progress
+
+| Phase | Commit |
+|---|---|
+| 1 Audit + plan | `aef831c` |
+| 2 Design system | `eb7d427` |
+| 3 Layout, navigation, wiring | `5a93dce` |
+| 4 Role screens | `7495117` |
+| 5 Interaction pass + teammate pages + verification fixes | next commit |
+
+### Teammate files touched (all phases)
+
+| File | Change |
+|---|---|
+| `Controllers/Account/AccController.cs` | Staff redirect after login (1 line) |
+| `Controllers/Account/AdminAccController.cs`, `DoctorAccController.cs` | `Index` returns its own view instead of `_Layout` |
+| `Controllers/Account/StaffAccController.cs` | **new** – Staff dashboard |
+| `Models/Account/UserAccount.cs` | `Staff` added to the `Role` enum |
+| `Views/PatientAcc/Index.cshtml`, `Views/DoctorAcc/Index.cshtml`, `Views/AdminAcc/Index.cshtml`, `Views/StaffAcc/Index.cshtml` | role dashboards (were empty placeholders) |
+| `Views/Acc/Login.cshtml`, `Views/Acc/Register.cshtml` | removed inline `style="max-width"` only |
+| `Views/Drugs/*`, `Views/Reports/*` | **not edited** – restyled through `theme.css` section 7 |
+
+Also confirm with the teammate: `AppointmentsController` `Cancel/Reschedule/Manage/UpdateStatus` are back to `StaffOrAdmin`.
+
+### Verification (phase 6)
+
+- `dotnet build`: 0 errors, 0 warnings.
+- Every page per role loaded in headless Chrome at 1280px and 375px: no JS errors, no horizontal page scroll, chat button covers no control.
+- Driven end to end: patient booking (all 5 steps + confirmation), cancel via modal, Upcoming/Past tabs, reschedule panel, chat clear modal; admin Reject-leave modal (Go back sends nothing; Confirm posts `approve=false`).
+- Known limits: bare `/Controller` URLs 404 because the default route is `Account/Login` (unchanged routing; menus link to `/Index`). Native date pickers follow the browser's locale. Demo DB has no drugs, so Drugs Details/Edit/Delete were not opened.

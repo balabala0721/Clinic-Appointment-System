@@ -87,7 +87,7 @@
     </div>
 
     <div class="col-lg-5">
-        <form asp-action="Save" method="post" class="card-clean mb-4" aria-labelledby="form-title">
+        <form asp-action="Save" method="post" class="card-clean mb-4" data-keep-input="schedule-@Model.Doctor.DoctorId" aria-labelledby="form-title">
             <h2 class="section-title" id="form-title">@(editing ? "Edit working day" : "Add a working day")</h2>
             <input type="hidden" asp-for="Form.ScheduleId" />
             <input type="hidden" asp-for="Form.DoctorId" />
@@ -127,7 +127,7 @@
             </div>
         </form>
 
-        <form asp-action="AddLeave" method="post" class="card-clean" aria-labelledby="leave-form-title">
+        <form asp-action="AddLeave" method="post" class="card-clean" data-keep-input="leave-@Model.Doctor.DoctorId" aria-labelledby="leave-form-title">
             <h2 class="section-title" id="leave-form-title">Record leave</h2>
             <p class="text-muted small">Leave recorded here is approved straight away.</p>
             <input type="hidden" asp-for="LeaveForm.DoctorId" />
