@@ -41,19 +41,13 @@ public class AccountController : Controller
             return View(new List<DevLoginUser>());
         }
 
-        // Show each user with their display name (doctor/patient name, or email for staff/admin)
+        // Show each user with their display name (FullName lives on User; fall back to email if blank)
         var users = await _db.Users.Where(u => u.AccountStatus == AccountStatus.Active).OrderBy(u => u.Role).ThenBy(u => u.Email)
                                    .AsNoTracking().ToListAsync();
-        var doctorNames = await _db.Doctors.AsNoTracking().ToDictionaryAsync(d => d.UserId, d => d.User.FullName);
-        var patientNames = await _db.Patients
-                                .Where(p => p.UserId != null && p.User != null)
-                                .AsNoTracking()
-                                .Select(p => new { UserId = p.UserId!.Value, p.User.FullName })
-                                .ToDictionaryAsync(x => x.UserId, x => x.FullName);
 
         var model = users.Select(u => new DevLoginUser(
             u.UserId, u.Role.ToString(), u.Email,
-            doctorNames.GetValueOrDefault(u.UserId) ?? patientNames.GetValueOrDefault(u.UserId) ?? u.Email)).ToList();
+            string.IsNullOrWhiteSpace(u.FullName) ? u.Email : u.FullName)).ToList();
         return View(model);
     }
 
