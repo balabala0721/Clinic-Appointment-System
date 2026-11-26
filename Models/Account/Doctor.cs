@@ -1,30 +1,26 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ClinicSystem.Models.Account
 {
     public class Specialisation
     {
-        [Required]
         [Key]
-        [MaxLength(11)]
         public int SpecialisationId { get; set; }
 
         [Required]
         [MaxLength(100)]
-        public string Name { get; set; } = "";
+        public string Name { get; set; } = " ";
     }
 
     public class Doctor
     {
-        [Required]
         [Key]
-        [MaxLength(11)]
         public int DoctorId { get; set; }
 
         [Required]
-        [MaxLength(11)]
-        public int UserId { get; set; }
+        public int? UserId { get; set; }
 
         [Required]
         [MaxLength(150)]
@@ -35,17 +31,17 @@ namespace ClinicSystem.Models.Account
         public int YearsOfExperience { get; set; }
 
         [Required]
-        [Range(0.0, 9999.99)]
+        [Precision(4, 2)]
         public decimal ConsultationFee { get; set; }
 
-        public string Bio { get; set; } = " ";
+        public string? Bio { get; set; }
 
         [Required]
         [MaxLength(11)]
-        public int SpecialisationId { get; set; }
+        public int? SpecialisationId { get; set; }
 
         public Specialisation? Specialisation { get; set; }
 
-        public User User { get; set; } = new User();
+        public User User { get; set; } = null!;
     }
 }

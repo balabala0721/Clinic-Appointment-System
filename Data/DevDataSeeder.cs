@@ -29,36 +29,38 @@ public static class DevDataSeeder
         db.Specialisations.AddRange(gp, paeds, derm);
 
         // ------------------------------------------------------------------ users
-        User NewUser(string email, string role) => new()
+        User NewUser(string email, string role, string fullName, string? phoneNo = null) => new()
         {
+            FullName = fullName,
+            PhoneNo = phoneNo,
             Email = email + DemoEmailDomain,
             PasswordHash = DemoPasswordHash,
             Role = Enum.Parse<Role>(role),
             CreatedAt = DateTime.UtcNow
         };
 
-        var admin = NewUser("admin", Roles.Admin.ToString());
-        var uTan = NewUser("dr.tan", Roles.Doctor.ToString());
-        var uLim = NewUser("dr.lim", Roles.Doctor.ToString());
-        var uRaj = NewUser("dr.rajesh", Roles.Doctor.ToString());
-        var uAis = NewUser("dr.aisyah", Roles.Doctor.ToString());
-        var uAli = NewUser("ali", Roles.Patient.ToString());
-        var uMei = NewUser("meiling", Roles.Patient.ToString());
-        var uSiva = NewUser("siva", Roles.Patient.ToString());
+        var admin = NewUser("admin", Roles.Admin.ToString(), "Clinic Admin");
+        var uTan = NewUser("dr.tan", Roles.Doctor.ToString(), "Dr Tan Wei Ming");
+        var uLim = NewUser("dr.lim", Roles.Doctor.ToString(), "Dr Lim Mei Ling");
+        var uRaj = NewUser("dr.rajesh", Roles.Doctor.ToString(), "Dr Rajesh Kumar");
+        var uAis = NewUser("dr.aisyah", Roles.Doctor.ToString(), "Dr Nur Aisyah");
+        var uAli = NewUser("ali", Roles.Patient.ToString(), "Ali bin Ahmad", "012-345 6789");
+        var uMei = NewUser("meiling", Roles.Patient.ToString(), "Wong Mei Ling", "013-222 3344");
+        var uSiva = NewUser("siva", Roles.Patient.ToString(), "Siva Raman", "014-555 6677");
         db.Users.AddRange(admin, uTan, uLim, uRaj, uAis, uAli, uMei, uSiva);
         await db.SaveChangesAsync();   // need the generated UserIds below
 
         // ---------------------------------------------------------------- doctors
-        var tan = new Doctor { UserId = uTan.UserId, SpecialisationId = gp.SpecialisationId, User = new User { FullName = "Dr Tan Wei Ming" }, ConsultationFee = 40 };
-        var lim = new Doctor { UserId = uLim.UserId, SpecialisationId = gp.SpecialisationId, User = new User { FullName = "Dr Lim Mei Ling" }, ConsultationFee = 40 };
-        var raj = new Doctor { UserId = uRaj.UserId, SpecialisationId = paeds.SpecialisationId, User = new User { FullName = "Dr Rajesh Kumar" }, ConsultationFee = 60 };
-        var ais = new Doctor { UserId = uAis.UserId, SpecialisationId = derm.SpecialisationId, User = new User { FullName = "Dr Nur Aisyah" }, ConsultationFee = 80 };
+        var tan = new Doctor { UserId = uTan.UserId, SpecialisationId = gp.SpecialisationId, User = uTan, ConsultationFee = 40 };
+        var lim = new Doctor { UserId = uLim.UserId, SpecialisationId = gp.SpecialisationId, User = uLim, ConsultationFee = 40 };
+        var raj = new Doctor { UserId = uRaj.UserId, SpecialisationId = paeds.SpecialisationId, User = uRaj, ConsultationFee = 60 };
+        var ais = new Doctor { UserId = uAis.UserId, SpecialisationId = derm.SpecialisationId, User = uAis, ConsultationFee = 80 };
         db.Doctors.AddRange(tan, lim, raj, ais);
 
         // --------------------------------------------------------------- patients
-        var ali = new Patient { UserId = uAli.UserId, User = new User { FullName = "Ali bin Ahmad", PhoneNo = "012-345 6789" } };
-        var mei = new Patient { UserId = uMei.UserId, User = new User { FullName = "Wong Mei Ling", PhoneNo = "013-222 3344" } };
-        var siva = new Patient { UserId = uSiva.UserId, User = new User { FullName = "Siva Raman", PhoneNo = "014-555 6677" } };
+        var ali = new Patient { UserId = uAli.UserId, User = uAli };
+        var mei = new Patient { UserId = uMei.UserId, User = uMei };
+        var siva = new Patient { UserId = uSiva.UserId, User = uSiva };
         db.Patients.AddRange(ali, mei, siva);
         await db.SaveChangesAsync();
 

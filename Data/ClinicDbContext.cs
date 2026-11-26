@@ -80,10 +80,9 @@ public class ClinicDbContext : DbContext
         modelBuilder.Entity<Patient>(e =>
         {
             e.ToTable("Patients", t => t.HasCheckConstraint("CK_Patients_Gender", "[Gender] IN ('Male','Female')"));
-            e.HasOne<User>().WithMany().HasForeignKey(p => p.UserId);
+            e.HasOne(p => p.User).WithOne().HasForeignKey<Patient>(p => p.UserId);
             e.HasIndex(p => p.UserId).IsUnique();          // one patient profile per login
             e.HasIndex(p => p.IdNumber).IsUnique();        // EF makes nullable unique indexes ignore NULLs
-            e.Property(p => p.User.CreatedAt).HasDefaultValueSql(UtcNowSql);
         });
 
         // ---------------------------------------------------------- doctors
@@ -96,7 +95,7 @@ public class ClinicDbContext : DbContext
         modelBuilder.Entity<Doctor>(e =>
         {
             e.ToTable("Doctors");
-            e.HasOne<User>().WithMany().HasForeignKey(d => d.UserId);
+            e.HasOne(d => d.User).WithOne().HasForeignKey<Doctor>(d => d.UserId);
             e.HasIndex(d => d.UserId).IsUnique();
             e.HasOne(d => d.Specialisation).WithMany().HasForeignKey(d => d.SpecialisationId);
         });

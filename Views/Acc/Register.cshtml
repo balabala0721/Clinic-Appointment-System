@@ -10,10 +10,8 @@
     <p class="text-body-secondary mb-4">Fill in the details below to create your patient account.</p>
 
     <form asp-action="Register" asp-controller="Acc" method="post">
-        <!-- Personal Information -->
         <div class="card shadow-sm border rounded-3 mb-4">
             <div class="card-body p-4">
-                <h5 class="fw-semibold mb-3">Personal Information</h5>
                 <div class="row g-3">
                     <div class="col-12">
                         <label asp-for="FullName" class="form-label"></label>
@@ -65,35 +63,13 @@
                         <input asp-for="DateOfBirth" type="date" class="form-control" />
                         <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Contact Information -->
-        <div class="card shadow-sm border rounded-3 mb-4">
-            <div class="card-body p-4">
-                <h5 class="fw-semibold mb-3">Contact Information</h5>
-                <div class="row g-3">
                     <div class="col-md-12">
                         <label asp-for="Email" class="form-label"></label>
                         <input asp-for="Email" class="form-control" />
                         <span asp-validation-for="Email" class="text-danger small"></span>
                     </div>
 
-                    <div class="col-md-12">
-                        <label asp-for="PhoneNo" class="form-label"></label>
-                        <input asp-for="PhoneNo" class="form-control" />
-                        <span asp-validation-for="PhoneNo" class="text-danger small"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Account Information -->
-        <div class="card shadow-sm border rounded-3 mb-4">
-            <div class="card-body p-4">
-                <h5 class="fw-semibold mb-3">Account Information</h5>
-                <div class="row g-3">
                     <div class="col-md-12">
                         <label asp-for="Password" class="form-label"></label>
                         <input asp-for="Password" type="password" class="form-control" />
@@ -113,7 +89,7 @@
             <button type="submit" class="btn btn-primary btn-lg">Register</button>
         </div>
 
-        <p class="text-center mb-0">Already have an account?<a asp-controller="Acc" asp-action="Login">Log in</a></p>
+        <p class="text-center mb-0">Already have an account? <a asp-controller="Acc" asp-action="Login">Log in</a></p>
     </form>
 </div>
 
