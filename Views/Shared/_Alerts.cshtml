@@ -1,10 +1,18 @@
-@* Shows TempData["Success"] / TempData["Error"] set by controllers after a redirect *@
-@if (TempData["Success"] is string ok)
-{
-    <div class="alert alert-success">@ok</div>
+@* Messages set by controllers after a redirect.
+   Keys: TempData["Success"] / ["Error"] (appointments, schedules) and
+         TempData["SuccessMessage"] / ["ErrorMessage"] (Drugs module) - both are shown here.
+   Success -> toast (clinic.js reads data-toast). Error -> stays visible at the top of the page.
+   #ajax-alert is the fallback box Clinic.showAlert() uses when a failure has no inline spot. *@
+@{
+    var ok = (TempData["Success"] ?? TempData["SuccessMessage"]) as string;
+    var err = (TempData["Error"] ?? TempData["ErrorMessage"]) as string;
 }
-@if (TempData["Error"] is string err)
+@if (!string.IsNullOrEmpty(ok))
 {
-    <div class="alert alert-danger">@err</div>
+    <div hidden data-toast="@ok"></div>
 }
-<div id="ajax-alert" class="alert d-none"></div>
+@if (!string.IsNullOrEmpty(err))
+{
+    <div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i><div>@err</div></div>
+}
+<div id="ajax-alert" class="alert d-none" role="alert"></div>

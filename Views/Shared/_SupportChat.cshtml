@@ -1,5 +1,5 @@
 @* Floating AI support chat (like a shop's customer-service chat). Shown to patients on every page.
-   Behaviour is in wwwroot/js/support-chat.js, styles in clinic-modules.css (.sc-*). *@
+   Behaviour is in wwwroot/js/support-chat.js, styles in theme.css (section 6, .sc-*). *@
 @inject ClinicSystem.Services.Ai.GeminiClient Gemini
 @{
     var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
