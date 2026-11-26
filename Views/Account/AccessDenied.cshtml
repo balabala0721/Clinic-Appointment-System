@@ -1,8 +1,21 @@
+@* 403 - shown by the cookie handler when a signed-in user opens a page their role can't use. *@
 @{
     ViewData["Title"] = "Access denied";
+    var home = AppNav.Home(User);
 }
-<div class="card-clean mx-auto text-center" style="max-width: 480px">
-    <h1 class="h5">This page isn't available for your role</h1>
-    <p class="text-muted">You're signed in as <strong>@User.Identity?.Name</strong>.</p>
-    <a asp-controller="Account" asp-action="Login" class="btn btn-primary btn-sm">Switch user</a>
+<div class="card-clean mx-auto" style="max-width: 32rem">
+    <div class="empty-state">
+        <div class="empty-icon" aria-hidden="true"><i class="bi bi-shield-lock"></i></div>
+        <h1 class="empty-title h4">This page isn't available for your account</h1>
+        <p class="empty-text">
+            You're signed in as <strong>@User.Identity?.Name</strong> (@AppNav.RoleLabel(AppNav.RoleOf(User))).
+            <span class="d-block small mt-1">Error 403</span>
+        </p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a class="btn btn-primary" asp-controller="@home.Controller" asp-action="@home.Action">Go to my dashboard</a>
+            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                <button class="btn btn-secondary">Switch user</button>
+            </form>
+        </div>
+    </div>
 </div>

@@ -56,9 +56,12 @@ var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/Status/500");
     app.UseHsts();
 }
+
+// Friendly pages for 404 and other error codes (StatusController + Views/Status/Index.cshtml)
+app.UseStatusCodePagesWithReExecute("/Status/{0}");
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

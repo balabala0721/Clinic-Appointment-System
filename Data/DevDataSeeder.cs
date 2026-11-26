@@ -20,7 +20,11 @@ public static class DevDataSeeder
 
     public static async Task SeedAsync(ClinicDbContext db)
     {
-        if (await db.Users.AnyAsync()) return;   // never touch a database that already has users
+        if (await db.Users.AnyAsync())           // never re-seed a database that already has users...
+        {
+            await EnsureDemoStaffAsync(db);      // ...except adding the demo Staff login to an existing demo DB
+            return;
+        }
 
         // ---------------------------------------------------------- specialisations
         var gp = new Specialisation { Name = ClinicSettings.FallbackSpecialisation };   // "General Practice"
@@ -40,6 +44,7 @@ public static class DevDataSeeder
         };
 
         var admin = NewUser("admin", Roles.Admin.ToString(), "Clinic Admin");
+        var staff = NewUser("frontdesk", Roles.Staff.ToString(), "Front Desk");
         var uTan = NewUser("dr.tan", Roles.Doctor.ToString(), "Dr Tan Wei Ming");
         var uLim = NewUser("dr.lim", Roles.Doctor.ToString(), "Dr Lim Mei Ling");
         var uRaj = NewUser("dr.rajesh", Roles.Doctor.ToString(), "Dr Rajesh Kumar");
@@ -47,7 +52,7 @@ public static class DevDataSeeder
         var uAli = NewUser("ali", Roles.Patient.ToString(), "Ali bin Ahmad", "012-345 6789");
         var uMei = NewUser("meiling", Roles.Patient.ToString(), "Wong Mei Ling", "013-222 3344");
         var uSiva = NewUser("siva", Roles.Patient.ToString(), "Siva Raman", "014-555 6677");
-        db.Users.AddRange(admin, uTan, uLim, uRaj, uAis, uAli, uMei, uSiva);
+        db.Users.AddRange(admin, staff, uTan, uLim, uRaj, uAis, uAli, uMei, uSiva);
         await db.SaveChangesAsync();   // need the generated UserIds below
 
         // ---------------------------------------------------------------- doctors
@@ -94,6 +99,26 @@ public static class DevDataSeeder
         await db.SaveChangesAsync();
 
         await AddSampleAppointmentsAsync(db);
+    }
+
+    /// <summary>
+    /// Demo databases created before the Staff role existed have no Staff user. Adds one,
+    /// only when the database is a demo one (has demo accounts) and the user is missing.
+    /// </summary>
+    private static async Task EnsureDemoStaffAsync(ClinicDbContext db)
+    {
+        const string email = "frontdesk" + DemoEmailDomain;
+        if (!await db.Users.AnyAsync(u => u.PasswordHash == DemoPasswordHash)) return;
+        if (await db.Users.AnyAsync(u => u.Email == email)) return;
+        db.Users.Add(new User
+        {
+            FullName = "Front Desk",
+            Email = email,
+            PasswordHash = DemoPasswordHash,
+            Role = Role.Staff,
+            CreatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
     }
 
     /// <summary>

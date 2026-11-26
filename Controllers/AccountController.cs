@@ -97,18 +97,21 @@ public class AccountController : Controller
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.UserId.ToString()),   // read by CurrentUserService.UserId
-            new(ClaimTypes.Name, user.Email),
+            new(ClaimTypes.Name, string.IsNullOrWhiteSpace(user.FullName) ? user.Email : user.FullName),   // shown in the layout
+            new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Role, user.Role.ToString())                           // used by [Authorize(Roles = ...)]
         };
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
     }
 
+    // Each role lands on its own dashboard (same targets as the real login in AccController)
     private IActionResult RedirectToHome(string role) => role switch
     {
-        Roles.Patient => RedirectToAction("Book", "Appointments"),
-        Roles.Doctor => RedirectToAction("Mine", "DoctorSchedules"),
-        _ => RedirectToAction("Manage", "Appointments")              // Staff / Admin
+        Roles.Patient => RedirectToAction("Index", "PatientAcc"),
+        Roles.Doctor => RedirectToAction("Index", "DoctorAcc"),
+        Roles.Staff => RedirectToAction("Index", "StaffAcc"),
+        _ => RedirectToAction("Index", "AdminAcc")
     };
 }
 

@@ -1,64 +1,95 @@
+@*
+    Shared layout for every page.
+    - Signed in:  sidebar (role menu from Helpers/AppNav.cs) + content area.
+                  Desktop: sidebar always visible. Below 992px: top bar with a menu button
+                  that opens the sidebar as a drawer (Bootstrap .offcanvas-lg).
+    - Signed out: centred page without a sidebar (login, register, error pages).
+    Styles: wwwroot/css/theme.css.  Shared JS: wwwroot/js/clinic.js.
+*@
+@{
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var role = AppNav.RoleOf(User);
+    var displayName = User.Identity?.Name ?? "";
+    var home = AppNav.Home(User);
+    var showChat = User.IsInRole(Roles.Patient);
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Clinic</title>
+    <title>@ViewData["Title"] - @ClinicInfo.Name</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
 </head>
-<body>
-    @* Placeholder layout - merge these nav links into the team's shared layout. *@
-    <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom mb-4">
-        <div class="container d-flex justify-content-between">
-            <a class="navbar-brand" asp-controller="Appointments" asp-action="Book">Clinic</a>
-            <ul class="navbar-nav">
-                @if (User.IsInRole(Roles.Patient))
-                {
-                    <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="Book">Book</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="My">My appointments</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="DoctorRecommendation" asp-action="Index">Find a doctor</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Index">Reports</a></li>
-
-                }
-                @if (User.IsInRole(Roles.Doctor))
-                {
-                    <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="Doctor">My appointments</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="DoctorSchedules" asp-action="Mine">My schedule</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Index">Reports</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="Drugs" asp-action="Index">Drugs</a></li>
-
-                }
-                @if (User.IsInRole(Roles.Admin))
-                {
-                    <li class="nav-item"><a class="nav-link" asp-controller="Appointments" asp-action="Manage">Appointments</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="DoctorSchedules" asp-action="Index">Schedules</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Index">Reports</a></li>
-                    <li class="nav-item"><a class="nav-link" asp-controller="Drugs" asp-action="Index">Drugs</a></li>
-
-                }
-            </ul>
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                @* TEMPORARY: shows who you're logged in as - handy while testing roles *@
-                <div class="d-flex align-items-center gap-2 small">
-                    <span class="text-muted">@User.Identity.Name (@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)</span>
-                    <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
-                        <button class="btn btn-outline-secondary btn-sm">Switch user</button>
-                    </form>
-                </div>
-            }
-        </div>
-    </nav>
+<body class="@(showChat ? "has-chat" : "")">
+    <a class="skip-link" href="#main">Skip to main content</a>
 
     @* One token for every AJAX POST on the page - read by clinic.js *@
     @Html.AntiForgeryToken()
 
-    <main class="container pb-5">
-        <partial name="_Alerts" />
-        @RenderBody()
-    </main>
+    @if (signedIn)
+    {
+        <div class="app-shell">
+            <aside class="app-sidebar offcanvas-lg offcanvas-start" id="sidebar" tabindex="-1" aria-labelledby="sidebar-title">
+                <div class="offcanvas-header">
+                    <span class="brand" id="sidebar-title"><span class="brand-mark" aria-hidden="true"><i class="bi bi-heart-pulse"></i></span>@ClinicInfo.Name</span>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close menu"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <a class="brand d-none d-lg-flex" asp-controller="@home.Controller" asp-action="@home.Action">
+                        <span class="brand-mark" aria-hidden="true"><i class="bi bi-heart-pulse"></i></span>@ClinicInfo.Name
+                    </a>
+
+                    <nav aria-label="Main menu">
+                        <partial name="_Nav" />
+                    </nav>
+
+                    <div class="user-box">
+                        <span class="avatar" aria-hidden="true">@Ui.Initials(displayName)</span>
+                        <div class="min-w-0">
+                            <div class="user-name">@displayName</div>
+                            <div class="user-role">@AppNav.RoleLabel(role)</div>
+                        </div>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="btn-logout m-0">
+                            <button class="btn btn-secondary btn-sm btn-icon" data-no-busy title="Log out" aria-label="Log out">
+                                <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </aside>
+
+            <div class="app-main">
+                <header class="app-topbar">
+                    <button class="btn btn-secondary btn-icon" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar"
+                            aria-controls="sidebar" aria-label="Open menu">
+                        <i class="bi bi-list" aria-hidden="true"></i>
+                    </button>
+                    <a class="brand" asp-controller="@home.Controller" asp-action="@home.Action">
+                        <span class="brand-mark" aria-hidden="true"><i class="bi bi-heart-pulse"></i></span>@ClinicInfo.Name
+                    </a>
+                    <span class="avatar ms-auto" title="@displayName (@AppNav.RoleLabel(role))">@Ui.Initials(displayName)</span>
+                </header>
+
+                <main id="main" class="app-content" tabindex="-1">
+                    <partial name="_Alerts" />
+                    @RenderBody()
+                </main>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="auth-shell">
+            <span class="brand"><span class="brand-mark" aria-hidden="true"><i class="bi bi-heart-pulse"></i></span>@ClinicInfo.Name</span>
+            <main id="main" class="auth-content" tabindex="-1">
+                <partial name="_Alerts" />
+                @RenderBody()
+            </main>
+        </div>
+    }
 
     <partial name="_Feedback" />
 
@@ -68,7 +99,7 @@
     @await RenderSectionAsync("Scripts", required: false)
 
     @* Floating AI support chat - patients only *@
-    @if (User.IsInRole(Roles.Patient))
+    @if (showChat)
     {
         <partial name="_SupportChat" />
         <script src="~/js/support-chat.js" asp-append-version="true"></script>

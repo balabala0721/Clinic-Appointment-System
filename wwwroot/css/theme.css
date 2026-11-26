@@ -242,6 +242,7 @@ a:hover { color: var(--color-primary-hover); }
 .skip-link:focus { top: var(--space-2); color: var(--color-on-primary); }
 
 .visually-hidden-focusable:not(:focus):not(:focus-within) { position: absolute !important; }
+.min-w-0 { min-width: 0; }
 
 
 /* -----------------------------------------------------------------------------
@@ -374,6 +375,7 @@ a:hover { color: var(--color-primary-hover); }
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
 }
+.app-topbar .btn-icon { font-size: var(--text-xl); }
 .app-topbar .topbar-user { margin-left: auto; font-size: var(--text-sm); color: var(--color-text-muted); }
 
 .app-content {
@@ -1416,6 +1418,11 @@ body.has-chat .app-content { padding-bottom: calc(var(--space-7) + var(--chat-cl
     }
     .table-stack td.actions { text-align: left; padding-top: var(--space-2); }
     .table-stack td.actions .d-inline-flex, .table-stack td.actions form { flex-wrap: wrap; }
+
+    /* Any other wide table (e.g. teammates' pages) scrolls inside its own box
+       instead of pushing the whole page sideways. */
+    .app-content .table:not(.table-stack) { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .app-content .table:not(.table-stack) > * { white-space: nowrap; }
 }
 @media (max-width: 575.98px) {       /* --bp-sm */
     .stepper .step-name { display: none; }

@@ -81,7 +81,7 @@ public class AppointmentsController : Controller
 
     // ---------------------------------------------- shared: patient + staff
 
-    [HttpPost, Authorize(Roles = Roles.Patient + "," + Roles.Admin), ValidateAntiForgeryToken]
+    [HttpPost, Authorize(Roles = Roles.Patient + "," + Roles.StaffOrAdmin), ValidateAntiForgeryToken]
     public async Task<IActionResult> Cancel([FromBody] CancelRequest request)
     {
         var owner = await OwnerPatientIdAsync();
@@ -90,7 +90,7 @@ public class AppointmentsController : Controller
         return Json(new { success = result.Success, message = result.Message });
     }
 
-    [HttpPost, Authorize(Roles = Roles.Patient + "," + Roles.Admin), ValidateAntiForgeryToken]
+    [HttpPost, Authorize(Roles = Roles.Patient + "," + Roles.StaffOrAdmin), ValidateAntiForgeryToken]
     public async Task<IActionResult> Reschedule([FromBody] RescheduleRequest request)
     {
         if (!ModelState.IsValid) return Json(new { success = false, message = "Please choose a new date and time." });
@@ -114,7 +114,7 @@ public class AppointmentsController : Controller
 
     // --------------------------------------------------------------- admin
 
-    [Authorize(Roles = Roles.Admin)]
+    [Authorize(Roles = Roles.StaffOrAdmin)]
     public async Task<IActionResult> Manage(DateOnly? date, int? doctorId, string? patientName, string? status, int page = 1)
     {
         var vm = new ManageAppointmentsViewModel
@@ -156,7 +156,7 @@ public class AppointmentsController : Controller
 
     // ------------------------------------------------------- status (shared)
 
-    [HttpPost, Authorize(Roles = Roles.Admin + "," + Roles.Doctor), ValidateAntiForgeryToken]
+    [HttpPost, Authorize(Roles = Roles.StaffOrAdmin + "," + Roles.Doctor), ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateStatus(int id, string status, string? returnUrl)
     {
         // Doctors: restricted to their own appointments and doctor-only transitions.

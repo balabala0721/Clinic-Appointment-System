@@ -124,6 +124,7 @@ namespace ClinicSystem.Controllers.Account
                 Role.Admin => RedirectToAction("Index", "AdminAcc"),
                 Role.Doctor => RedirectToAction("Index", "DoctorAcc"),
                 Role.Patient => RedirectToAction("Index", "PatientAcc"),
+                Role.Staff => RedirectToAction("Index", "StaffAcc"),
                 _ => View(vm)
             };
         }

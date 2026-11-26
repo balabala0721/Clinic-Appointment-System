@@ -7,7 +7,8 @@ namespace ClinicSystem.Models.Account
     {
         Patient,
         Doctor,
-        Admin
+        Admin,
+        Staff
     }
 
     public enum AccountStatus

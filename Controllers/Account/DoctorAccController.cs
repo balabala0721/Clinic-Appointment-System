@@ -8,7 +8,7 @@ namespace ClinicSystem.Controllers.Account
     {
         public IActionResult Index()
         {
-            return View("~/Views/Shared/_Layout.cshtml");
+            return View();
         }
     }
 }

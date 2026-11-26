@@ -1,0 +1,32 @@
+@* Sidebar menu for the signed-in role. The items are defined in Helpers/AppNav.cs. *@
+@inject ScheduleService Schedules
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    var items = AppNav.For(User);
+
+    // Small counters next to menu items (admin: leave requests waiting for review)
+    var counts = new Dictionary<string, int>();
+    if (items.Any(i => i.CountKey == "pendingLeave"))
+    {
+        counts["pendingLeave"] = (await Schedules.GetLeavesAsync(LeaveStatus.Pending, null)).Count;
+    }
+}
+<ul class="side-nav">
+    @foreach (var item in items)
+    {
+        var active = AppNav.IsActive(item, controller, action);
+        var count = item.CountKey != null && counts.TryGetValue(item.CountKey, out var c) ? c : 0;
+        <li>
+            <a asp-controller="@item.Controller" asp-action="@item.Action"
+               class="@(active ? "active" : "")" aria-current="@(active ? "page" : null)">
+                <i class="bi @item.Icon" aria-hidden="true"></i>
+                <span>@item.Label</span>
+                @if (count > 0)
+                {
+                    <span class="nav-count" aria-label="@count waiting">@count</span>
+                }
+            </a>
+        </li>
+    }
+</ul>
