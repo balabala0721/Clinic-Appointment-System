@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ClinicSystem.Migrations;
 
 /// <inheritdoc />
-public partial class _20261125015756_InitialCreate : Migration
+public partial class _20261127073557_InitialCreate : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,14 +15,15 @@ public partial class _20261125015756_InitialCreate : Migration
             name: "Drugs",
             columns: table => new
             {
-                DrugID = table.Column<int>(type: "int", maxLength: 11, nullable: false),
+                DrugID = table.Column<string>(type: "nvarchar(11)", maxLength: 11, nullable: false),
                 DrugName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                 DrugCategory = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                 MedicalUses = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                 UnitPrice = table.Column<decimal>(type: "decimal(10,2)", precision: 10, scale: 2, nullable: false),
                 StockQuantity = table.Column<int>(type: "int", nullable: false),
-                StockStatus = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                MinStockLevel = table.Column<int>(type: "int", nullable: false)
+                MinStockLevel = table.Column<int>(type: "int", nullable: false),
+                IsActive = table.Column<bool>(type: "bit", nullable: false)
             },
             constraints: table =>
             {
@@ -417,7 +418,7 @@ public partial class _20261125015756_InitialCreate : Migration
                 PrescriptionId = table.Column<int>(type: "int", nullable: false)
                     .Annotation("SqlServer:Identity", "1, 1"),
                 VisitId = table.Column<int>(type: "int", nullable: false),
-                DrugId = table.Column<int>(type: "int", nullable: false),
+                DrugId = table.Column<string>(type: "nvarchar(11)", maxLength: 11, nullable: false),
                 Dosage = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                 Frequency = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                 DurationDays = table.Column<int>(type: "int", nullable: true),

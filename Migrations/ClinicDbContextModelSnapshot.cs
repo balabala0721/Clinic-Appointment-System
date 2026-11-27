@@ -17,7 +17,7 @@ partial class ClinicDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261125100557_AddDrugIsActive";
+    public override string LastMigrationId => "20261127073557_InitialCreate";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {

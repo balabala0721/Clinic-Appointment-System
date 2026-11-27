@@ -13,8 +13,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ClinicSystem.Migrations;
 
 [DbContext(typeof(ClinicDbContext))]
-[Migration("20261125015756_InitialCreate")]
-partial class _20261125015756_InitialCreate
+[Migration("20261127073557_InitialCreate")]
+partial class _20261127073557_InitialCreate
 {
     /// <inheritdoc />
     protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -488,9 +488,14 @@ partial class _20261125015756_InitialCreate
 
         modelBuilder.Entity("ClinicSystem.Models.Entities.Drug", b =>
             {
-                b.Property<int>("DrugID")
+                b.Property<string>("DrugID")
                     .HasMaxLength(11)
-                    .HasColumnType("int");
+                    .HasColumnType("nvarchar(11)");
+
+                b.Property<string>("Description")
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasColumnType("nvarchar(500)");
 
                 b.Property<string>("DrugCategory")
                     .IsRequired()
@@ -500,6 +505,9 @@ partial class _20261125015756_InitialCreate
                     .IsRequired()
                     .HasMaxLength(100)
                     .HasColumnType("nvarchar(100)");
+
+                b.Property<bool>("IsActive")
+                    .HasColumnType("bit");
 
                 b.Property<string>("MedicalUses")
                     .IsRequired()
@@ -511,10 +519,6 @@ partial class _20261125015756_InitialCreate
 
                 b.Property<int>("StockQuantity")
                     .HasColumnType("int");
-
-                b.Property<string>("StockStatus")
-                    .IsRequired()
-                    .HasColumnType("nvarchar(max)");
 
                 b.Property<decimal>("UnitPrice")
                     .HasPrecision(10, 2)
@@ -899,8 +903,10 @@ partial class _20261125015756_InitialCreate
                     .HasMaxLength(50)
                     .HasColumnType("nvarchar(50)");
 
-                b.Property<int>("DrugId")
-                    .HasColumnType("int");
+                b.Property<string>("DrugId")
+                    .IsRequired()
+                    .HasMaxLength(11)
+                    .HasColumnType("nvarchar(11)");
 
                 b.Property<int?>("DurationDays")
                     .HasColumnType("int");

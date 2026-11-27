@@ -12,6 +12,7 @@ public enum StockStatus
     OutOfStock
 }
 
+
 public enum DrugCategory
 {
     Analgesics,
@@ -28,7 +29,16 @@ public enum DrugCategory
     Antidiabetics,
     Antihypertensives,
     Bronchodilators,
-    Corticosteroids
+    Corticosteroids,
+
+    // Additional categories
+    Vitamins,
+    Dermatologicals,
+    Cardiovascular,
+    Gastrointestinal,
+    MuscleRelaxants,
+    Ophthalmic,
+    ENT
 }
 
 public class Drug

@@ -7,9 +7,11 @@ using ClinicSystem.Services.Ai;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<DrugInventoryPdfService>();
 builder.Services.AddHttpContextAccessor();
 
 // ---- Database (one shared DbContext for the whole team)
