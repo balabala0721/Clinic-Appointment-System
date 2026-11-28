@@ -82,6 +82,7 @@ public class ClinicDbContext : DbContext
         {
             e.ToTable("Patients", t => t.HasCheckConstraint("CK_Patients_Gender", "[Gender] IN ('Male','Female')"));
             e.HasOne(p => p.User).WithOne().HasForeignKey<Patient>(p => p.UserId);
+            e.Navigation(p => p.User).AutoInclude();       // name/phone/email live on User - always load it
             e.HasIndex(p => p.UserId).IsUnique();          // one patient profile per login
             e.HasIndex(p => p.IdNumber).IsUnique();        // EF makes nullable unique indexes ignore NULLs
         });
@@ -97,6 +98,7 @@ public class ClinicDbContext : DbContext
         {
             e.ToTable("Doctors");
             e.HasOne(d => d.User).WithOne().HasForeignKey<Doctor>(d => d.UserId);
+            e.Navigation(d => d.User).AutoInclude();       // name/phone/email live on User - always load it
             e.HasIndex(d => d.UserId).IsUnique();
             e.HasOne(d => d.Specialisation).WithMany().HasForeignKey(d => d.SpecialisationId);
         });
