@@ -1,4 +1,5 @@
-﻿using ClinicSystem.Data;
+﻿using ClinicSystem.Services;
+using ClinicSystem.Data;
 using ClinicSystem.Models.Entities;
 using ClinicSystem.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -11,12 +12,32 @@ using System.Security.Claims;
 namespace ClinicSystem.Controllers;
 
 public class ReportsController : Controller
-{
 
+{
+    private readonly DrugInventoryPdfService pdfService;
     private ClinicDbContext db;
-    public ReportsController(ClinicDbContext context)
+    public ReportsController(ClinicDbContext context, DrugInventoryPdfService pdfService)
     {
         db = context;
+        this.pdfService = pdfService;
+    }
+
+    [Authorize(Roles = Roles.Admin)]
+    [HttpGet]
+    public IActionResult DownloadDrugInventoryPdf()
+    {
+        var drugs = db.DrugInventoryReports
+            .AsNoTracking()
+            .OrderBy(d => d.DrugId)
+            .ToList();
+
+        var pdf = pdfService.GeneratePdf(drugs);
+
+        return File(
+            pdf,
+            "application/pdf",
+            $"DrugInventoryReport_{DateTime.Now:yyyyMMdd_HHmmss}.pdf"
+        );
     }
 
     private List<ReportType> GetAllowedReportTypes()
@@ -27,7 +48,7 @@ public class ReportsController : Controller
         {
             allowedTypes.AddRange(new[]
             {
-            ReportType.AppointmentSummaryReport,
+            ReportType.AppointmentReport,
             ReportType.PatientMedicalHistoryReport,
             ReportType.PrescriptionReport,
             ReportType.DrugInventoryReport,
@@ -39,7 +60,7 @@ public class ReportsController : Controller
         {
             allowedTypes.AddRange(new[]
             {
-            ReportType.AppointmentSummaryReport,
+            ReportType.AppointmentReport,
             ReportType.PatientMedicalHistoryReport,
             ReportType.PrescriptionReport
         });
@@ -169,10 +190,23 @@ public class ReportsController : Controller
 
 
     // Appointment Report
-    [Authorize(Roles = Roles.Patient)]
+    [Authorize(Roles = Roles.Admin + "," + Roles.Doctor + "," + Roles.Patient)]
+    [HttpGet]
     public IActionResult Appointment()
     {
-        // Get current logged-in UserID
+        var reports = db.AppointmentReports
+            .AsNoTracking();
+
+        // Admin and Doctor can view all appointment records
+        if (User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Doctor))
+        {
+            return View(reports
+                .OrderBy(a => a.AppointmentDate)
+                .ThenBy(a => a.StartTime)
+                .ToList());
+        }
+
+        // Patient can only view their own appointment records
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (!int.TryParse(userIdValue, out int userId))
@@ -180,7 +214,6 @@ public class ReportsController : Controller
             return Unauthorized();
         }
 
-        // Find current Patient
         var patient = db.Patients
             .AsNoTracking()
             .FirstOrDefault(p => p.UserId == userId);
@@ -190,13 +223,13 @@ public class ReportsController : Controller
             return NotFound("Patient record not found.");
         }
 
-        // Get only this patient's appointments
-        var reports = db.AppointmentReports
-            .AsNoTracking()
+        var patientReports = reports
             .Where(a => a.PatientId == patient.PatientId)
+            .OrderBy(a => a.AppointmentDate)
+            .ThenBy(a => a.StartTime)
             .ToList();
 
-        return View(reports);
+        return View(patientReports);
     }
 
     // Consultation Report
@@ -263,11 +296,5 @@ public class ReportsController : Controller
         return View(report);
     }
 
-
-    public IActionResult Customize()
-    {
-
-        return View();
-    }
 
 }

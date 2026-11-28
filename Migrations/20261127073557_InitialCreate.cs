@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ClinicSystem.Migrations;
 
 /// <inheritdoc />
-public partial class _20261126033105_InitialCreate : Migration
+public partial class _20261127073557_InitialCreate : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)

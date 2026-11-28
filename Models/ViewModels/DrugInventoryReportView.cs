@@ -1,11 +1,10 @@
-﻿
-using ClinicSystem.Models.Entities;
+﻿using ClinicSystem.Models.Entities;
 
 namespace ClinicSystem.Models.ViewModels
 {
     public class DrugInventoryReportView
     {
-        public int DrugId { get; set; }
+        public string DrugId { get; set; } = "";
 
         public string DrugName { get; set; } = "";
 

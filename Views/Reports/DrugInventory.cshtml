@@ -1,0 +1,72 @@
+﻿@model IEnumerable<ClinicSystem.Models.ViewModels.DrugInventoryReportView>
+
+@{
+    ViewData["Title"] = "Drug Inventory Report";
+}
+
+<h2 class="mb-4">Drug Inventory Report</h2>
+<div class="mb-3">
+    <a asp-controller="Reports"
+       asp-action="DownloadDrugInventoryPdf"
+       class="btn btn-danger">
+        <i class="bi bi-file-pdf"></i> Download PDF
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Drug ID</th>
+                        <th>Drug Name</th>
+                        <th>Category</th>
+                        <th>Medical Uses</th>
+                        <th>Unit Price (RM)</th>
+                        <th>Stock Quantity</th>
+                        <th>Minimum Stock</th>
+                        <th>Stock Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        @foreach (var drug in Model)
+                        {
+                            <tr>
+                                <td>@drug.DrugId</td>
+                                <td>@drug.DrugName</td>
+                                <td>@drug.DrugCategory</td>
+                                <td>@drug.MedicalUses</td>
+                                <td>@drug.UnitPrice.ToString("N2")</td>
+                                <td>@drug.StockQuantity</td>
+                                <td>@drug.MinStockLevel</td>
+                                <td>
+                                    @if (drug.StockStatus == ClinicSystem.Models.Entities.StockStatus.OutOfStock)
+                                    {
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                    }
+                                    else if (drug.StockStatus == ClinicSystem.Models.Entities.StockStatus.LowStock)
+                                    {
+                                        <span class="badge bg-warning text-dark">Low Stock</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">In Stock</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center">No drug inventory records found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
